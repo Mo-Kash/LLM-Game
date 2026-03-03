@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		--background: 220 12% 13%;
+		--foreground: 40 20% 88%;
+
+		--card: 220 10% 17%;
+		--card-foreground: 40 20% 88%;
+
+		--popover: 220 10% 19%;
+		--popover-foreground: 40 20% 88%;
+
+		--primary: 38 55% 58%;
+		--primary-foreground: 220 15% 8%;
+
+		--secondary: 220 8% 22%;
+		--secondary-foreground: 40 15% 75%;
+
+		--muted: 220 8% 30%;
+		--muted-foreground: 215 12% 55%;
+
+		--accent: 348 50% 42%;
+		--accent-foreground: 348 30% 85%;
+
+		--destructive: 0 60% 48%;
+		--destructive-foreground: 0 20% 95%;
+
+		--border: 220 8% 25%;
+		--input: 220 8% 20%;
+		--ring: 38 40% 50%;
+
+		--radius: 0.125rem;
+
+		/* DE-specific tokens */
+		--brass: 38 55% 55%;
+		--brass-glow: 38 65% 68%;
+		--brass-dim: 38 30% 35%;
+		--crimson: 348 55% 45%;
+		--crimson-glow: 348 60% 55%;
+		--crimson-deep: 348 45% 28%;
+		--parchment: 38 30% 78%;
+		--parchment-dark: 38 18% 30%;
+		--cold-violet: 260 22% 42%;
+		--cold-violet-glow: 260 28% 55%;
+		--system-text: 215 18% 55%;
+		--smoke: 220 8% 35%;
+		--candle: 35 70% 65%;
+		--panel-elevated: 220 8% 20%;
+
+		/* Health/Morale */
+		--health: 15 60% 48%;
+		--morale: 260 40% 52%;
+
+		--shadow-warm: 0 0 40px 10px hsla(38, 55%, 55%, 0.06);
+		--shadow-panel: 0 4px 24px -4px hsla(0, 0%, 0%, 0.5);
+
+		--sidebar-background: 220 12% 10%;
+		--sidebar-foreground: 40 12% 72%;
+		--sidebar-primary: 38 45% 52%;
+		--sidebar-primary-foreground: 220 12% 5%;
+		--sidebar-accent: 220 8% 18%;
+		--sidebar-accent-foreground: 40 10% 65%;
+		--sidebar-border: 220 8% 18%;
+		--sidebar-ring: 38 30% 45%;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+		font-family: "Libre Baskerville", Georgia, serif;
+		overflow: hidden;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: "Cinzel", serif;
+		letter-spacing: 0.05em;
+	}
+
+	code,
+	pre,
+	.font-mono {
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	::-webkit-scrollbar {
+		width: 5px;
+	}
+	::-webkit-scrollbar-track {
+		background: hsl(220 12% 8%);
+	}
+	::-webkit-scrollbar-thumb {
+		background: hsl(220 8% 22%);
+		border-radius: 3px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: hsl(38 25% 30%);
+	}
+}
+
+@layer utilities {
+	/* Candle shadow flicker */
+	@keyframes candle-flicker {
+		0%,
+		100% {
+			box-shadow: 0 0 60px 20px hsla(35, 70%, 55%, 0.03);
+		}
+		30% {
+			box-shadow: 0 0 80px 25px hsla(35, 70%, 55%, 0.06);
+		}
+		60% {
+			box-shadow: 0 0 50px 18px hsla(35, 70%, 55%, 0.02);
+		}
+		80% {
+			box-shadow: 0 0 70px 22px hsla(35, 70%, 55%, 0.07);
+		}
+	}
+	.candle-glow {
+		animation: candle-flicker 4s ease-in-out infinite;
+	}
+
+	.panel-shadow {
+		box-shadow: var(--shadow-panel);
+	}
+
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.animate-fade-in {
+		animation: fade-in 0.6s ease-out forwards;
+	}
+
+	@keyframes ember-pulse {
+		0%,
+		100% {
+			opacity: 0.4;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+	.animate-ember {
+		animation: ember-pulse 2s ease-in-out infinite;
+	}
+
+	/* DE-style trust gradient */
+	.trust-gradient {
+		background: linear-gradient(
+			90deg,
+			hsl(var(--crimson-deep)),
+			hsl(var(--crimson)),
+			hsl(var(--brass-dim)),
+			hsl(var(--brass))
+		);
+	}
+
+	/* Health/Morale bars */
+	.bg-health {
+		background-color: hsl(var(--health));
+	}
+	.bg-morale {
+		background-color: hsl(var(--morale));
+	}
+	.text-health {
+		color: hsl(var(--health));
+	}
+	.text-morale {
+		color: hsl(var(--morale));
+	}
+
+	/* Text utilities */
+	.text-brass {
+		color: hsl(var(--brass));
+	}
+	.text-brass-glow {
+		color: hsl(var(--brass-glow));
+	}
+	.text-crimson-glow {
+		color: hsl(var(--crimson-glow));
+	}
+}

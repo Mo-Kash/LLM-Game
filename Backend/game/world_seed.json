@@ -1,0 +1,103 @@
+{
+  "locations": {
+    "tavern_common": {
+      "id": "tavern_common",
+      "name": "The Rusted Flagon - Common Room",
+      "description": "A dim, smoky tavern. Firelight catches on pewter tankards. The air smells of tallow and old wood.",
+      "connected_to": ["tavern_cellar", "tavern_backroom", "market_square"],
+      "state": {}
+    },
+    "tavern_cellar": {
+      "id": "tavern_cellar",
+      "name": "The Rusted Flagon - Cellar",
+      "description": "Low stone arches, barrels stacked high, a faint smell of mildew and spilled wine.",
+      "connected_to": ["tavern_common"],
+      "state": {}
+    },
+    "tavern_backroom": {
+      "id": "tavern_backroom",
+      "name": "The Rusted Flagon - Back Room",
+      "description": "A narrow room used for private dealings. One guttering candle on a scarred table.",
+      "connected_to": ["tavern_common"],
+      "state": {}
+    },
+    "market_square": {
+      "id": "market_square",
+      "name": "Ashford Market Square",
+      "description": "A cobbled square ringed by shuttered stalls. A covered well stands at its centre.",
+      "connected_to": ["tavern_common"],
+      "state": {}
+    }
+  },
+  "npcs": {
+    "gareth_barkeep": {
+      "id": "gareth_barkeep",
+      "name": "Gareth",
+      "location_id": "tavern_common",
+      "description": "A broad-shouldered barkeep with a salt-and-pepper beard and watchful grey eyes.",
+      "personality": "Guarded but fair. Speaks in short sentences. Respects those who pay their tab. Distrusts the Guild.",
+      "knowledge": [
+        "A merchant named Aldric Voss went missing three days ago after meeting someone in the back room.",
+        "The Merchants Guild has been pressuring local traders.",
+        "There is a locked strongbox hidden behind the third barrel on the east wall of the cellar.",
+        "The town guard captain Maren is on the Guild's payroll."
+      ],
+      "secrets": [
+        "Gareth saw a Guild enforcer named Thorn leave the backroom the night Aldric vanished.",
+        "The strongbox contains Aldric's ledger - proof of Guild extortion."
+      ],
+      "alive": true
+    },
+    "lira_barmaid": {
+      "id": "lira_barmaid",
+      "name": "Lira",
+      "location_id": "tavern_common",
+      "description": "A young woman with ink-stained fingers and an overly cheerful demeanour that doesn't reach her eyes.",
+      "personality": "Nervous, eager to please, hiding something. Talks too much when frightened.",
+      "knowledge": [
+        "Aldric was a regular. He always ordered the house wine and sat by the window.",
+        "A hooded figure waited for Aldric in the back room."
+      ],
+      "secrets": [
+        "Lira was paid by the Guild to report on who Aldric spoke to.",
+        "She deeply regrets it and fears for her safety."
+      ],
+      "alive": true
+    }
+  },
+  "objects": {
+    "house_wine_bottle": {
+      "id": "house_wine_bottle",
+      "name": "Bottle of House Wine",
+      "description": "A dark bottle with a wax seal. Cheap but honest.",
+      "location_id": "tavern_common",
+      "owner_id": null,
+      "properties": { "drinkable": true }
+    },
+    "torn_note": {
+      "id": "torn_note",
+      "name": "Torn Note",
+      "description": "A scrap of parchment with the words 'THE CELLAR - MIDNIGHT' in hurried script.",
+      "location_id": "tavern_backroom",
+      "owner_id": null,
+      "properties": { "readable": true }
+    }
+  },
+  "rules": [
+    "NPCs only reveal secrets if trust >= 30 or player presents compelling evidence.",
+    "Players cannot enter locked areas without a key or a reason accepted by the NPC.",
+    "NPCs will not admit Guild involvement until confronted with direct evidence.",
+    "Violence is possible but immediately raises world tension (PLAYER_FLAG_SET tension += 1).",
+    "The strongbox cannot be opened without the key (not yet in world)."
+  ],
+  "player": {
+    "current_location_id": "tavern_common",
+    "inventory": [],
+    "flags": {}
+  },
+  "relationships": {
+    "gareth_barkeep": { "player": 0 },
+    "lira_barmaid": { "player": 5 }
+  },
+  "turn": 0
+}
