@@ -1,4 +1,4 @@
-"""Jan.ai LLM client — OpenAI-compatible REST API wrapper."""
+"""OpenRouter LLM client — OpenAI-compatible REST API wrapper."""
 
 from __future__ import annotations
 import json
@@ -15,9 +15,9 @@ _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?})\s*```", re.DOTALL)
 _JSON_RAW = re.compile(r"(\{.*})", re.DOTALL)
 
 
-class JanAIClient:
+class OpenRouterClient:
     def __init__(
-        self, base_url: str, model: str, api_key: str = "janai", timeout: int = 30
+        self, base_url: str, model: str, api_key: str = "openrouter", timeout: int = 30
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -34,7 +34,7 @@ class JanAIClient:
             )
             return r.status_code == 200
         except Exception as exc:
-            log.error("Jan.ai unreachable: %s", exc)
+            log.error("OpenRouter unreachable: %s", exc)
             return False
 
     # ── Single generation ─────────────────────────────────────────────────

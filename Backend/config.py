@@ -1,6 +1,11 @@
 """Central configuration — all tunables in one place."""
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent
@@ -14,10 +19,10 @@ SNAPSHOT_PATH = DATA_DIR / "snapshot.json"
 WORLD_SEED_PATH = BASE_DIR / "game" / "world_seed.json"
 EMBED_CACHE_PATH = DATA_DIR / "embed_cache.db"
 
-# ── Jan.ai / LLM ───────────────────────────────────────────────────────────
-JANAI_BASE_URL = "http://localhost:1337/v1"
-JANAI_API_KEY = "secret-key-123"  # Jan.ai ignores the key but OpenAI client needs one
-MODEL_NAME = "Meta-Llama-3_1-8B-Instruct-IQ4_XS"
+# ── OpenRouter / LLM ───────────────────────────────────────────────────────────
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your_openrouter_api_key_here")
+MODEL_NAME = "arcee-ai/trinity-large-preview:free"
 TEMPERATURE = 0.35
 MAX_GENERATION_TOKENS = 512
 REQUEST_TIMEOUT = 60  # seconds

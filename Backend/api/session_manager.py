@@ -27,7 +27,7 @@ from core.snapshot import load_snapshot, save_snapshot
 from memory.embedder import Embedder
 from memory.faiss_index import FAISSMemory
 from memory.short_term import ShortTermMemory
-from llm.janai_client import JanAIClient
+from llm.openrouter_client import OpenRouterClient
 from game.world_loader import load_world_seed
 from graph.definition import build_graph, TurnState
 from schemas.events import Event, EventType
@@ -90,13 +90,13 @@ class GameSession:
 class SessionManager:
     """
     Creates, stores, retrieves, and destroys game sessions.
-    Shared resources (Embedder, JanAIClient) are initialised once.
+    Shared resources (Embedder, OpenRouterClient) are initialised once.
     """
 
     def __init__(self):
         self._sessions: Dict[str, GameSession] = {}
         self._embedder: Optional[Embedder] = None
-        self._client: Optional[JanAIClient] = None
+        self._client: Optional[OpenRouterClient] = None
         self._seed = None
         self._initialised = False
         self._init_lock = asyncio.Lock()
@@ -122,10 +122,10 @@ class SessionManager:
                     config.EMBEDDING_DIM,
                 ),
             )
-            self._client = JanAIClient(
-                base_url=config.JANAI_BASE_URL,
+            self._client = OpenRouterClient(
+                base_url=config.OPENROUTER_BASE_URL,
                 model=config.MODEL_NAME,
-                api_key=config.JANAI_API_KEY,
+                api_key=config.OPENROUTER_API_KEY,
                 timeout=config.REQUEST_TIMEOUT,
             )
             self._initialised = True

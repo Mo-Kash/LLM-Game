@@ -19,7 +19,7 @@ from core.snapshot import load_snapshot, save_snapshot
 from memory.embedder import Embedder
 from memory.faiss_index import FAISSMemory
 from memory.short_term import ShortTermMemory
-from llm.janai_client import JanAIClient
+from llm.openrouter_client import OpenRouterClient
 from game.world_loader import load_world_seed
 from graph.definition import build_graph, TurnState
 from schemas.events import Event, EventType
@@ -179,10 +179,10 @@ def startup(reset: bool, default_npc: str) -> tuple:
     short_term = ShortTermMemory(config.MAX_SHORT_TERM_TURNS)
 
     # ── LLM client ─────────────────────────────────────────────────────────
-    client = JanAIClient(
-        base_url=config.JANAI_BASE_URL,
+    client = OpenRouterClient(
+        base_url=config.OPENROUTER_BASE_URL,
         model=config.MODEL_NAME,
-        api_key=config.JANAI_API_KEY,
+        api_key=config.OPENROUTER_API_KEY,
         timeout=config.REQUEST_TIMEOUT,
     )
 
@@ -227,9 +227,9 @@ def game_loop(
     # Connectivity check
     if not client.ping():
         print(
-            "\033[1;31m[WARNING] Jan.ai not reachable at "
-            f"{config.JANAI_BASE_URL}. Check that Jan.ai is running "
-            f"with model '{config.MODEL_NAME}' loaded.\033[0m\n"
+            "\033[1;31m[WARNING] OpenRouter not reachable at "
+            f"{config.OPENROUTER_BASE_URL}. Check your API key "
+            f"and network connection. Model: '{config.MODEL_NAME}'.\033[0m\n"
         )
 
     while True:
