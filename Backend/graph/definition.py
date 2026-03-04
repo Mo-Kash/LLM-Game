@@ -129,7 +129,7 @@ def make_node_llm_generation(client: CerebrasClient):
 
 
 def node_json_parsing(state: TurnState) -> TurnState:
-    raw = state.get("raw_llm_output", "")
+    raw = state.get("raw_llm_output") or ""
     parsed_dict = CerebrasClient.extract_json(raw)
     if parsed_dict is None:
         log.warning("JSON parse failed — using fallback dialogue.")
