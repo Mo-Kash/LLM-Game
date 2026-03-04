@@ -23,7 +23,7 @@ from core.snapshot import save_snapshot
 from memory.embedder import Embedder
 from memory.faiss_index import FAISSMemory
 from memory.short_term import ShortTermMemory
-from llm.openrouter_client import OpenRouterClient
+from llm.cerebras_client import CerebrasClient
 from llm.prompt_builder import build_prompt
 from game.validator import validate_and_build_events
 
@@ -111,7 +111,7 @@ def make_node_prompt_assembly(
     return node_prompt_assembly
 
 
-def make_node_llm_generation(client: OpenRouterClient):
+def make_node_llm_generation(client: CerebrasClient):
     def node_llm_generation(state: TurnState) -> TurnState:
         t0 = time.perf_counter()
         raw = client.generate(
@@ -130,7 +130,7 @@ def make_node_llm_generation(client: OpenRouterClient):
 
 def node_json_parsing(state: TurnState) -> TurnState:
     raw = state.get("raw_llm_output", "")
-    parsed_dict = OpenRouterClient.extract_json(raw)
+    parsed_dict = CerebrasClient.extract_json(raw)
     if parsed_dict is None:
         log.warning("JSON parse failed — using fallback dialogue.")
         state["parsed_output"] = None
@@ -288,7 +288,7 @@ def build_graph(
     embedder: Embedder,
     memory: FAISSMemory,
     short_term: ShortTermMemory,
-    client: OpenRouterClient,
+    client: CerebrasClient,
     seed: WorldState,
     snapshot_interval: int = config.SNAPSHOT_INTERVAL,
 ):

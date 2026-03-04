@@ -19,10 +19,10 @@ SNAPSHOT_PATH = DATA_DIR / "snapshot.json"
 WORLD_SEED_PATH = BASE_DIR / "game" / "world_seed.json"
 EMBED_CACHE_PATH = DATA_DIR / "embed_cache.db"
 
-# ── OpenRouter / LLM ───────────────────────────────────────────────────────────
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your_openrouter_api_key_here")
-MODEL_NAME = "arcee-ai/trinity-large-preview:free"
+# ── Cerebras LLM ─────────────────────────────────────────────────────────────
+CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "your_cerebras_api_key_here")
+MODEL_NAME = "gpt-oss-120b"
+
 TEMPERATURE = 0.35
 MAX_GENERATION_TOKENS = 512
 REQUEST_TIMEOUT = 60  # seconds
