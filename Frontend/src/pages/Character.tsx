@@ -17,11 +17,13 @@ export default function CharacterPage() {
 					</h2>
 				</div>
 				<div className="space-y-4 overflow-y-auto p-4">
-					{/* Portrait */}
-					<div className="flex h-32 w-full items-center justify-center border border-border bg-secondary">
-						<span className="font-heading text-4xl text-muted-foreground/30">
-							?
+					<div className="space-y-1">
+						<span className="font-mono text-[9px] tracking-widest text-muted-foreground">
+							NAME
 						</span>
+						<p className="font-heading text-lg tracking-wider text-primary">
+							{useGameStore.getState().playerName || "Unknown"}
+						</p>
 					</div>
 
 					{activeSession && (

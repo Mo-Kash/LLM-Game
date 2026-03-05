@@ -11,6 +11,7 @@ import type { APIResponse } from "@/types/game";
 
 export interface SessionInfo {
 	session_id: string;
+	player_name: string;
 	turn: number;
 	active_npc_id: string;
 	current_location_id: string;
@@ -59,6 +60,12 @@ export interface GameStateResponse {
 	location: LocationInfo | null;
 	player: PlayerInfo | null;
 	relationships: Record<string, Record<string, number>>;
+	journal: Array<{
+		id: string;
+		turn: number;
+		content: string;
+		timestamp: number;
+	}>;
 }
 
 export interface ActionResponse {
@@ -82,6 +89,14 @@ export interface HealthResponse {
 	version: string;
 	llm_reachable: boolean;
 	active_sessions: number;
+}
+
+export interface SaveInfo {
+	session_id: string;
+	player_name: string;
+	location_name: string;
+	turn: number;
+	created_at: number;
 }
 
 // ── REST Client ────────────────────────────────────────────
@@ -196,6 +211,18 @@ class APIClient {
 
 	async healthCheck(): Promise<HealthResponse> {
 		return this.request<HealthResponse>("GET", "/health");
+	}
+
+	async listSessions(): Promise<SaveInfo[]> {
+		return this.request<SaveInfo[]>("GET", "/sessions");
+	}
+
+	async saveSession(sessionId: string): Promise<void> {
+		await this.request("POST", `/save/${sessionId}`);
+	}
+
+	async loadSession(sessionId: string): Promise<SessionInfo> {
+		return this.request<SessionInfo>("POST", `/load/${sessionId}`);
 	}
 }
 

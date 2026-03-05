@@ -98,30 +98,22 @@ export default function NpcsPage() {
 							transition={{ duration: 0.3 }}
 							className="flex flex-1 flex-col p-6"
 						>
-							{/* Header */}
-							<div className="mb-6 flex items-start gap-6">
-								<div className="flex h-24 w-24 shrink-0 items-center justify-center border border-border bg-secondary">
-									<span className="font-heading text-2xl text-muted-foreground">
-										{selected.name[0]}
-									</span>
-								</div>
-								<div>
-									<h1 className="font-heading text-xl tracking-wider text-primary">
-										{selected.name}
-									</h1>
-									<p className="mt-1 font-mono text-xs tracking-wider text-muted-foreground">
-										{selected.title}
-									</p>
-									<div className="mt-2 flex gap-2">
-										{selected.allegiances.map((a) => (
-											<span
-												key={a}
-												className="border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
-											>
-												{a}
-											</span>
-										))}
-									</div>
+							<div className="mb-6">
+								<h1 className="font-heading text-4xl tracking-widest text-primary">
+									{selected.name.toUpperCase()}
+								</h1>
+								<p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground opacity-70">
+									{selected.title}
+								</p>
+								<div className="mt-4 flex flex-wrap gap-2">
+									{selected.allegiances.map((a) => (
+										<span
+											key={a}
+											className="border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-[9px] tracking-widest text-primary/80"
+										>
+											{a.toUpperCase()}
+										</span>
+									))}
 								</div>
 							</div>
 

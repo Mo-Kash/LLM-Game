@@ -45,6 +45,13 @@ class PlayerState(BaseModel):
     flags: Dict[str, Any] = Field(default_factory=dict)
 
 
+class JournalEntry(BaseModel):
+    id: str
+    turn: int
+    content: str
+    timestamp: float
+
+
 class WorldState(BaseModel):
     locations: Dict[str, Location] = Field(default_factory=dict)
     npcs: Dict[str, NPC] = Field(default_factory=dict)
@@ -53,4 +60,5 @@ class WorldState(BaseModel):
     player: PlayerState
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
     # relationships[npc_id][entity_id] = trust delta (-100..100)
+    journal: List[JournalEntry] = Field(default_factory=list)
     turn: int = 0

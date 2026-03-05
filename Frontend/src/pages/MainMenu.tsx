@@ -1,30 +1,40 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
-import { useSessionStore } from "@/stores/sessionStore";
+import { apiClient, SaveInfo } from "@/services/api";
 
 export default function MainMenu() {
 	const navigate = useNavigate();
 	const { sessionId } = useGameStore();
-	const { saveSlots } = useSessionStore();
+	const [saves, setSaves] = useState<SaveInfo[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 
-	const hasSaves = saveSlots.length > 0;
+	useEffect(() => {
+		apiClient
+			.listSessions()
+			.then(setSaves)
+			.catch(console.error)
+			.finally(() => setIsLoading(false));
+	}, []);
+
+	const hasSaves = saves.length > 0;
 
 	const menuItems = [
 		{
 			label: "NEW GAME",
 			action: () => navigate("/new-game"),
-			enabled: true,
+			enabled: !isLoading,
 		},
 		{
 			label: "CONTINUE",
 			action: () => navigate("/game"),
-			enabled: !!sessionId || hasSaves,
+			enabled: !isLoading && (!!sessionId || hasSaves),
 		},
 		{
 			label: "LOAD GAME",
 			action: () => navigate("/session"),
-			enabled: hasSaves,
+			enabled: !isLoading && hasSaves,
 		},
 	];
 

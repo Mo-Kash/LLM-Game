@@ -5,26 +5,50 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useGameStore } from "@/stores/gameStore";
 import { cn } from "@/lib/utils";
 
+const GENDER_OPTIONS = ["Male", "Female", "Non-binary", "Other"];
+const OCCUPATION_OPTIONS = [
+	{
+		id: "detective",
+		name: "Detective",
+		desc: "A keen eye for detail and a mind for mystery.",
+	},
+	{
+		id: "scholar",
+		name: "Scholar",
+		desc: "Knowledge is your greatest weapon and shield.",
+	},
+	{
+		id: "merchant",
+		name: "Merchant",
+		desc: "You know the value of everything and the price of nothing.",
+	},
+	{
+		id: "wanderer",
+		name: "Wanderer",
+		desc: "The road is your home, and secrets are your currency.",
+	},
+];
+
 export default function NewGame() {
 	const navigate = useNavigate();
 	const { setActiveSession } = useSessionStore();
 	const { createSession } = useGameStore();
 	const [name, setName] = useState("");
 	const [gender, setGender] = useState("");
-	const [age, setAge] = useState<string>("");
+	const [age, setAge] = useState<string>("25");
 	const [occupation, setOccupation] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const isFormValid =
 		name.trim() !== "" &&
-		gender.trim() !== "" &&
-		age.trim() !== "" &&
-		occupation.trim() !== "";
+		gender !== "" &&
+		parseInt(age) >= 18 &&
+		occupation !== "";
 
 	const handleStart = async () => {
 		if (!isFormValid) {
-			setError("Please fill out all fields to continue.");
+			setError("Please fill out all fields correctly (Age must be 18+).");
 			return;
 		}
 
@@ -32,7 +56,6 @@ export default function NewGame() {
 		setError(null);
 
 		try {
-			// Create a real backend session with character metadata
 			await createSession({
 				name,
 				gender,
@@ -40,12 +63,12 @@ export default function NewGame() {
 				occupation,
 			});
 
-			// Update session store with metadata
+			const sessionId = useGameStore.getState().sessionId;
 			setActiveSession({
-				id: useGameStore.getState().sessionId || `session-${Date.now()}`,
+				id: sessionId || `session-${Date.now()}`,
 				createdAt: Date.now(),
 				worldSeed: `seed-${Date.now().toString(36)}`,
-				background: occupation, // Using occupation as the primary background descriptor
+				background: occupation,
 				moralAlignment: 50,
 			});
 
@@ -63,113 +86,146 @@ export default function NewGame() {
 	};
 
 	return (
-		<div className="flex h-screen w-screen items-center justify-center overflow-y-auto bg-background">
+		<div className="flex min-h-screen w-screen items-center justify-center overflow-y-auto bg-background p-4 py-12">
 			<motion.div
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ duration: 0.5 }}
-				className="w-full max-w-lg space-y-6 p-8"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.6 }}
+				className="panel-shadow w-full max-w-2xl space-y-10 rounded-lg border border-border bg-card/30 p-10 backdrop-blur-sm"
 			>
-				<div className="text-center">
-					<h2 className="font-heading text-xl tracking-[0.15em] text-primary">
+				<div className="space-y-2 text-center">
+					<h2 className="font-heading text-3xl tracking-[0.2em] text-primary">
 						NEW INVESTIGATION
 					</h2>
-					<p className="mt-2 font-mono text-[10px] tracking-wider text-muted-foreground">
-						DEFINE YOUR IDENTITY
+					<div className="mx-auto h-px w-24 bg-primary/30" />
+					<p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground opacity-70">
+						Establish your dossier
 					</p>
 				</div>
 
 				{/* Error message */}
 				{error && (
-					<div className="border border-destructive/30 bg-destructive/5 px-4 py-3 text-center">
+					<motion.div
+						initial={{ opacity: 0, height: 0 }}
+						animate={{ opacity: 1, height: "auto" }}
+						className="border border-destructive/30 bg-destructive/10 px-4 py-3 text-center"
+					>
 						<p className="font-mono text-xs text-destructive">{error}</p>
-					</div>
+					</motion.div>
 				)}
 
-				<div className="grid grid-cols-1 gap-6">
-					{/* Name */}
-					<div className="space-y-2">
-						<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-							NAME
-						</label>
-						<input
-							type="text"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="Your name..."
-							disabled={isCreating}
-							className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
-						/>
-					</div>
-
-					<div className="grid grid-cols-2 gap-4">
-						{/* Gender */}
-						<div className="space-y-2">
-							<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-								GENDER
+				<div className="space-y-8">
+					{/* Name and Age */}
+					<div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+						<div className="space-y-3 md:col-span-2">
+							<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
+								CODΞNAMΞ / NAMΞ
 							</label>
 							<input
 								type="text"
-								value={gender}
-								onChange={(e) => setGender(e.target.value)}
-								placeholder="e.g. Male, Female, etc."
+								value={name}
+								onChange={(e) => setName(e.target.value)}
+								placeholder="Enter your name..."
 								disabled={isCreating}
-								className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+								className="w-full border-b border-border bg-transparent px-0 py-3 font-body text-lg text-foreground transition-all focus:border-primary focus:outline-none"
 							/>
 						</div>
-
-						{/* Age */}
-						<div className="space-y-2">
-							<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-								AGE
+						<div className="space-y-3">
+							<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
+								AGΞ (MIN. 18)
 							</label>
 							<input
 								type="number"
+								min="18"
 								value={age}
 								onChange={(e) => setAge(e.target.value)}
-								placeholder="30"
 								disabled={isCreating}
-								className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+								className="w-full border-b border-border bg-transparent px-0 py-3 font-body text-lg text-foreground transition-all focus:border-primary focus:outline-none"
 							/>
+						</div>
+					</div>
+
+					{/* Gender */}
+					<div className="space-y-4">
+						<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
+							GΞNDΞR IDΞNTITY
+						</label>
+						<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+							{GENDER_OPTIONS.map((opt) => (
+								<button
+									key={opt}
+									onClick={() => setGender(opt)}
+									disabled={isCreating}
+									className={cn(
+										"border px-3 py-4 font-mono text-[10px] tracking-widest transition-all",
+										gender === opt
+											? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(182,141,64,0.15)]"
+											: "border-border text-muted-foreground hover:border-primary/40",
+									)}
+								>
+									{opt.toUpperCase()}
+								</button>
+							))}
 						</div>
 					</div>
 
 					{/* Occupation */}
-					<div className="space-y-2">
-						<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-							OCCUPATION
+					<div className="space-y-4">
+						<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
+							PROFΞSSIONAL BACKGROUND
 						</label>
-						<input
-							type="text"
-							value={occupation}
-							onChange={(e) => setOccupation(e.target.value)}
-							placeholder="Your current profession..."
-							disabled={isCreating}
-							className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
-						/>
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+							{OCCUPATION_OPTIONS.map((opt) => (
+								<button
+									key={opt.id}
+									onClick={() => setOccupation(opt.name)}
+									disabled={isCreating}
+									className={cn(
+										"flex flex-col space-y-2 border p-5 text-left transition-all",
+										occupation === opt.name
+											? "border-primary bg-primary/5 shadow-[0_0_20px_rgba(182,141,64,0.1)]"
+											: "border-border hover:border-primary/30",
+									)}
+								>
+									<span
+										className={cn(
+											"font-heading text-sm tracking-widest",
+											occupation === opt.name
+												? "text-primary"
+												: "text-foreground",
+										)}
+									>
+										{opt.name.toUpperCase()}
+									</span>
+									<span className="font-body text-[11px] leading-relaxed text-muted-foreground">
+										{opt.desc}
+									</span>
+								</button>
+							))}
+						</div>
 					</div>
 				</div>
 
 				{/* Actions */}
-				<div className="flex gap-3 pt-4">
+				<div className="flex flex-col gap-4 pt-6 sm:flex-row">
 					<button
 						onClick={() => navigate("/")}
 						disabled={isCreating}
-						className="flex-1 border border-border px-4 py-3 font-mono text-xs tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+						className="flex-1 border border-border px-6 py-4 font-mono text-[10px] tracking-[0.2em] text-muted-foreground transition-all hover:bg-muted/10 hover:text-foreground"
 					>
-						BACK
+						ABORT
 					</button>
 					<button
 						onClick={handleStart}
 						disabled={isCreating || !isFormValid}
 						className={cn(
-							"flex-1 border px-4 py-3 font-heading text-xs tracking-[0.15em] transition-colors",
+							"flex-[2] border px-6 py-4 font-heading text-xs tracking-[0.25em] transition-all",
 							isFormValid
-								? "border-primary/50 bg-secondary text-primary hover:bg-primary/10"
-								: "cursor-not-allowed border-border text-muted-foreground opacity-50",
+								? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(182,141,64,0.2)] hover:bg-primary/20"
+								: "cursor-not-allowed border-border text-muted-foreground opacity-30",
 						)}
 					>
-						{isCreating ? "INITIALIZING..." : "BEGIN"}
+						{isCreating ? "INITIALIZING Dossier..." : "INITIALIZΞ SYSTΞM"}
 					</button>
 				</div>
 			</motion.div>

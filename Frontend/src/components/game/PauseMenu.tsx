@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/stores/uiStore";
+import { useGameStore } from "@/stores/gameStore";
 
 export function PauseMenu() {
 	const navigate = useNavigate();
@@ -23,9 +24,9 @@ export function PauseMenu() {
 		{ label: "RESUME", action: () => closeModal() },
 		{
 			label: "SAVE GAME",
-			action: () => {
+			action: async () => {
+				await useGameStore.getState().saveGame();
 				closeModal();
-				navigate("/session");
 			},
 		},
 		{

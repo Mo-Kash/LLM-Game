@@ -18,6 +18,7 @@ class EventType(str, Enum):
     PLAYER_FLAG_SET = "PLAYER_FLAG_SET"
     SESSION_START = "SESSION_START"
     SESSION_END = "SESSION_END"
+    JOURNAL_ENTRY_CREATED = "JOURNAL_ENTRY_CREATED"
 
 
 class Event(BaseModel):
@@ -68,3 +69,7 @@ class NpcStateChangedPayload(BaseModel):
 class PlayerFlagSetPayload(BaseModel):
     key: str
     value: Any
+
+
+class JournalEntryCreatedPayload(BaseModel):
+    content: str

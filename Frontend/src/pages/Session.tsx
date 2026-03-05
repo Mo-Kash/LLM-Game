@@ -1,92 +1,95 @@
-import { useSessionStore } from "@/stores/sessionStore";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useGameStore } from "@/stores/gameStore";
+import { SaveInfo } from "@/services/api";
 
 export default function SessionPage() {
-	const { saveSlots, activeSession } = useSessionStore();
+	const navigate = useNavigate();
+	const { listSavedSessions, loadGame } = useGameStore();
+	const [saves, setSaves] = useState<SaveInfo[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		listSavedSessions()
+			.then(setSaves)
+			.finally(() => setIsLoading(false));
+	}, [listSavedSessions]);
+
+	const handleLoad = async (id: string) => {
+		try {
+			await loadGame(id);
+			navigate("/game");
+		} catch (error) {
+			console.error("Load failed:", error);
+		}
+	};
 
 	return (
-		<div className="flex h-full">
-			<div className="flex-1 space-y-8 overflow-y-auto p-8">
-				{/* Active session info */}
-				{activeSession && (
-					<div className="space-y-3">
-						<h2 className="font-heading text-xs tracking-widest text-muted-foreground">
-							ACTIVE SESSION
-						</h2>
-						<div className="space-y-2 border border-border bg-card p-4">
-							<div className="flex justify-between text-xs">
-								<span className="font-mono text-muted-foreground/60">SEED</span>
-								<span className="font-mono text-foreground">
-									{activeSession.worldSeed}
-								</span>
-							</div>
-							<div className="flex justify-between text-xs">
-								<span className="font-mono text-muted-foreground/60">
-									BACKGROUND
-								</span>
-								<span className="text-foreground">
-									{activeSession.background}
-								</span>
-							</div>
-							<div className="flex justify-between text-xs">
-								<span className="font-mono text-muted-foreground/60">
-									ALIGNMENT
-								</span>
-								<span className="text-foreground">
-									{activeSession.moralAlignment}
-								</span>
-							</div>
-						</div>
-					</div>
-				)}
+		<div className="flex h-full flex-col bg-background p-8">
+			<div className="mb-8 space-y-2">
+				<h2 className="font-heading text-xl tracking-[0.2em] text-primary">
+					ARCHIVED DOSSIERS
+				</h2>
+				<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+					Select a session to resume investigation
+				</p>
+			</div>
 
-				{/* Save slots */}
-				<div className="space-y-3">
-					<h2 className="font-heading text-xs tracking-widest text-muted-foreground">
-						SAVE SLOTS
-					</h2>
-					<div className="space-y-2">
-						{saveSlots.length === 0 ? (
-							<div className="border border-dashed border-border/50 bg-card/10 p-12 text-center">
-								<p className="font-mono text-xs tracking-[0.2em] text-muted-foreground/40">
-									NO SAVED GAMES DETECTED
-								</p>
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{isLoading ? (
+					<div className="col-span-full py-20 text-center">
+						<p className="animate-pulse font-mono text-xs text-muted-foreground">
+							SCANNING ARCHIVES...
+						</p>
+					</div>
+				) : saves.length === 0 ? (
+					<div className="col-span-full border border-dashed border-border/40 bg-card/10 py-20 text-center">
+						<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground opacity-40">
+							NO SAVED SESSIONS FOUND
+						</p>
+					</div>
+				) : (
+					saves.map((save) => (
+						<motion.button
+							key={save.session_id}
+							initial={{ opacity: 0, scale: 0.98 }}
+							animate={{ opacity: 1, scale: 1 }}
+							onClick={() => handleLoad(save.session_id)}
+							className="group flex flex-col border border-border bg-card/40 p-6 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/40 hover:shadow-primary/5"
+						>
+							<div className="mb-4 flex items-start justify-between">
+								<span className="font-heading text-sm tracking-widest text-primary">
+									{save.player_name.toUpperCase()}
+								</span>
+								<span className="font-mono text-[9px] text-muted-foreground/40">
+									TURN {save.turn}
+								</span>
 							</div>
-						) : (
-							saveSlots.map((slot) => (
-								<div
-									key={slot.id}
-									className="group flex cursor-pointer items-center justify-between border border-border bg-card p-4 transition-colors hover:border-primary/20"
-								>
-									<div>
-										<span className="font-heading text-xs tracking-wider text-foreground">
-											{slot.label ?? `Slot ${slot.id}`}
-										</span>
-										<p className="mt-0.5 font-mono text-[10px] text-muted-foreground/50">
-											{slot.location} — {slot.subLocation}
-										</p>
-									</div>
-									<div className="text-right">
-										<span className="font-mono text-[10px] text-muted-foreground/40">
-											{new Date(slot.timestamp).toLocaleDateString()}
-										</span>
-										<p className="font-mono text-[10px] text-muted-foreground/30">
-											{Math.floor(slot.playtime / 60)}m
-										</p>
-									</div>
+
+							<div className="space-y-4">
+								<div className="space-y-1">
+									<label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground opacity-50">
+										LAST KNOWN LOCATION
+									</label>
+									<p className="text-sm font-medium text-foreground/90">
+										{save.location_name}
+									</p>
 								</div>
-							))
-						)}
-					</div>
 
-					{/* Placeholder slots for flavor, only if slots exist or just show minimal empty slots */}
-					{saveSlots.length > 0 && saveSlots.length < 3 && (
-						<div className="cursor-pointer border border-dashed border-border/50 bg-card/30 p-4 text-center transition-colors hover:border-primary/20">
-							<span className="font-mono text-[10px] tracking-widest text-muted-foreground/20">
-								EMPTY SLOT
-							</span>
-						</div>
-					)}
-				</div>
+								<div className="flex items-center justify-between border-t border-border/40 pt-4">
+									<span className="font-mono text-[9px] text-muted-foreground">
+										RECORDED:{" "}
+										{new Date(save.created_at * 1000).toLocaleDateString()}
+									</span>
+									<span className="font-mono text-[9px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
+										RESUME →
+									</span>
+								</div>
+							</div>
+						</motion.button>
+					))
+				)}
 			</div>
 		</div>
 	);

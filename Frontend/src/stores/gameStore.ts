@@ -1,6 +1,11 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { DialogueMessage, NPC, JournalEntry, Clue } from "@/types/game";
+import type {
+	DialogueMessage,
+	NPC,
+	JournalEntry,
+	Clue,
+	MessageType,
+} from "@/types/game";
 import {
 	apiClient,
 	wsService,
@@ -8,11 +13,13 @@ import {
 	type ActionResponse,
 	type NPCInfo,
 	type WSOutMessage,
+	type SaveInfo,
 } from "@/services/api";
 
 interface GameState {
 	// Session
 	sessionId: string | null;
+	playerName: string | null;
 	isConnected: boolean;
 
 	// Location
@@ -69,10 +76,19 @@ interface GameState {
 	refreshState: () => Promise<void>;
 
 	/** Send player input (dialogue or command) to backend */
-	sendAction: (content: string) => Promise<void>;
+	sendAction: (content: string, targetNpcId?: string) => Promise<void>;
 
 	/** Switch active NPC via backend */
 	switchNPC: (npcId: string) => Promise<void>;
+
+	/** Trigger manual save on backend */
+	saveGame: () => Promise<void>;
+
+	/** Load an existing session */
+	loadGame: (sessionId: string) => Promise<void>;
+
+	/** Get list of saved sessions */
+	listSavedSessions: () => Promise<SaveInfo[]>;
 
 	/** Disconnect and clean up */
 	disconnect: () => void;
@@ -115,11 +131,10 @@ function toFrontendNPC(
 	};
 }
 
-export const useGameStore = create<GameState>()(
-	persist(
-		(set, get) => ({
+export const useGameStore = create<GameState>((set, get) => ({
 			// ... existing state ...
 			sessionId: null,
+			playerName: null,
 			isConnected: false,
 
 			// Location
@@ -201,6 +216,7 @@ export const useGameStore = create<GameState>()(
 					});
 					set({
 						sessionId: session.session_id,
+						playerName: session.player_name,
 						turn: session.turn,
 						dialogueHistory: [],
 					});
@@ -211,16 +227,9 @@ export const useGameStore = create<GameState>()(
 					// Connect WebSocket
 					get().connectWebSocket();
 
-					// Add narration message
-					const state = get();
-					get().addMessage({
-						id: Date.now().toString(),
-						type: "narration",
-						content:
-							state.currentLocationDescription ||
-							`You step into ${state.currentLocationName}. The air hangs heavy with smoke and unspoken secrets.`,
-						timestamp: Date.now(),
-					});
+					// We no longer add hardcoded narration here.
+					// The backend should return the initial state/narration if turn=0.
+					// Or the user can type /look.
 				} catch (error) {
 					console.error("[GameStore] Failed to create session:", error);
 					throw error;
@@ -277,14 +286,24 @@ export const useGameStore = create<GameState>()(
 						updates.npcs = npcsRecord;
 					}
 
+					// Journal Entries
+					if (state.journal) {
+						updates.journalEntries = state.journal.map((j) => ({
+							id: j.id,
+							timestamp: j.timestamp * 1000,
+							content: j.content,
+							tags: [],
+						}));
+					}
+
 					set(updates as GameState);
 				} catch (error) {
 					console.error("[GameStore] Failed to refresh state:", error);
 				}
 			},
 
-			sendAction: async (content: string) => {
-				const { sessionId, activeNPC } = get();
+			sendAction: async (content: string, targetNpcId?: string) => {
+				const { sessionId } = get();
 				if (!sessionId) {
 					console.error("[GameStore] No active session");
 					return;
@@ -304,21 +323,25 @@ export const useGameStore = create<GameState>()(
 					const result: ActionResponse = await apiClient.sendAction(
 						sessionId,
 						content,
+						targetNpcId,
 					);
 
 					// Check if it's a command response
 					if (content.startsWith("/")) {
+						const type = result.npc_id === "narrator" ? "narration" : "system";
 						get().addMessage({
 							id: (Date.now() + 1).toString(),
-							type: "system",
+							type: type as MessageType,
+							speaker: result.npc_name,
 							content: result.npc_dialogue,
 							timestamp: Date.now(),
 						});
 					} else {
 						// NPC response
+						const type = result.npc_id === "narrator" ? "narration" : "npc";
 						get().addMessage({
 							id: (Date.now() + 1).toString(),
-							type: "npc",
+							type: type as MessageType,
 							speaker: result.npc_name,
 							content: result.npc_dialogue,
 							timestamp: Date.now(),
@@ -365,6 +388,48 @@ export const useGameStore = create<GameState>()(
 				}
 			},
 
+			saveGame: async () => {
+				const { sessionId } = get();
+				if (!sessionId) return;
+				try {
+					await apiClient.saveSession(sessionId);
+					get().addMessage({
+						id: Date.now().toString(),
+						type: "system",
+						content: "Game state persisted to secure archive.",
+						timestamp: Date.now(),
+					});
+				} catch (error) {
+					console.error("[GameStore] Save error:", error);
+				}
+			},
+
+			loadGame: async (sessionId: string) => {
+				try {
+					const session = await apiClient.loadSession(sessionId);
+					set({
+						sessionId: session.session_id,
+						playerName: session.player_name,
+						turn: session.turn,
+						dialogueHistory: [], // Clear history for fresh reload or keep?
+					});
+					await get().refreshState();
+					get().connectWebSocket();
+				} catch (error) {
+					console.error("[GameStore] Load error:", error);
+					throw error;
+				}
+			},
+
+			listSavedSessions: async () => {
+				try {
+					return await apiClient.listSessions();
+				} catch (error) {
+					console.error("[GameStore] List saves error:", error);
+					return [];
+				}
+			},
+
 			connectWebSocket: () => {
 				const { sessionId } = get();
 				if (!sessionId) return;
@@ -402,30 +467,5 @@ export const useGameStore = create<GameState>()(
 					turn: 0,
 				});
 			},
-		}),
-		{
-			name: "npc-engine-game-state",
-			partialize: (state) => ({
-				sessionId: state.sessionId,
-				dialogueHistory: state.dialogueHistory,
-				currentLocation: state.currentLocation,
-				currentLocationName: state.currentLocationName,
-				currentLocationDescription: state.currentLocationDescription,
-				connectedLocations: state.connectedLocations,
-				npcs: state.npcs,
-				activeNPC: state.activeNPC,
-				inventory: state.inventory,
-				relationships: state.relationships,
-				turn: state.turn,
-				journalEntries: state.journalEntries,
-				clues: state.clues,
-			}),
-			onRehydrateStorage: () => (state) => {
-				if (state?.sessionId) {
-					console.log("[GameStore] Rehydrated session:", state.sessionId);
-					state.connectWebSocket();
-				}
-			},
-		},
-	),
+		})
 );

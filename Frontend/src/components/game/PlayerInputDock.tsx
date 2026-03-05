@@ -7,20 +7,25 @@ export function PlayerInputDock() {
 	const [input, setInput] = useState("");
 	const [commandHistory, setCommandHistory] = useState<string[]>([]);
 	const [historyIndex, setHistoryIndex] = useState(-1);
-	const { isProcessing, sendAction, sessionId } = useGameStore();
+	const [targetNpcId, setTargetNpcId] = useState<string | null>(null);
+	const { isProcessing, sendAction, sessionId, npcs, currentLocation } =
+		useGameStore();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	const handleSend = useCallback(() => {
-		if (!input.trim() || isProcessing) return;
+	const presentNpcs = Object.values(npcs).filter(
+		(npc) => npc.id !== "narrator",
+	);
 
-		const trimmed = input.trim();
-		setCommandHistory((prev) => [trimmed, ...prev.slice(0, 49)]);
+	const handleSend = useCallback(() => {
+		const curInput = input.trim();
+		if (!curInput || isProcessing) return;
+
+		setCommandHistory((prev) => [curInput, ...prev.slice(0, 49)]);
 		setHistoryIndex(-1);
 		setInput("");
 
-		// Send to backend (handles both commands and dialogue)
-		sendAction(trimmed);
-	}, [input, isProcessing, sendAction]);
+		sendAction(curInput, targetNpcId || undefined);
+	}, [isProcessing, sendAction, targetNpcId, input]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -50,7 +55,41 @@ export function PlayerInputDock() {
 	const isDisabled = !sessionId;
 
 	return (
-		<div className="border-t border-border bg-card px-4 py-3">
+		<div className="border-t border-border bg-card px-4 py-3 pb-6">
+			{/* NPC Selector */}
+			{!isCommand && !isDisabled && presentNpcs.length > 0 && (
+				<div className="mb-3 flex flex-wrap gap-2">
+					<span className="mr-1 self-center font-mono text-[9px] tracking-widest text-muted-foreground">
+						ADDRESSING:
+					</span>
+					<button
+						onClick={() => setTargetNpcId(null)}
+						className={cn(
+							"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
+							targetNpcId === null
+								? "border-primary bg-primary/10 text-primary"
+								: "border-border text-muted-foreground opacity-60 hover:opacity-100",
+						)}
+					>
+						GENERAL / NEARBY
+					</button>
+					{presentNpcs.map((npc) => (
+						<button
+							key={npc.id}
+							onClick={() => setTargetNpcId(npc.id)}
+							className={cn(
+								"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
+								targetNpcId === npc.id
+									? "border-primary bg-primary/10 text-primary"
+									: "border-border text-muted-foreground opacity-60 hover:opacity-100",
+							)}
+						>
+							{npc.name.toUpperCase()}
+						</button>
+					))}
+				</div>
+			)}
+
 			<div className="flex items-end gap-2">
 				<textarea
 					ref={textareaRef}

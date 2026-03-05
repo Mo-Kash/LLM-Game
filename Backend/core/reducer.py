@@ -91,6 +91,17 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
         elif et == EventType.NPC_SPOKE:
             pass  # dialogue is ephemeral; no world mutation
 
+        elif et == EventType.JOURNAL_ENTRY_CREATED:
+            from schemas.world_state import JournalEntry
+
+            entry = JournalEntry(
+                id=str(event.id or f"je_{int(event.timestamp)}"),
+                turn=event.turn,
+                content=p.get("content", ""),
+                timestamp=event.timestamp,
+            )
+            s.journal.append(entry)
+
         else:
             log.warning("Reducer: unhandled event type %s", et)
 

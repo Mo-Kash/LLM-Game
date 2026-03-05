@@ -218,6 +218,109 @@ class SessionManager:
         )
         return session
 
+    async def list_sessions(self) -> List[Dict[str, Any]]:
+        """List all sessions saved on disk."""
+        sessions_dir = config.DATA_DIR / "sessions"
+        if not sessions_dir.exists():
+            return []
+
+        results = []
+        for s_dir in sessions_dir.iterdir():
+            if not s_dir.is_dir():
+                continue
+
+            # Try to get metadata from snapshot
+            snapshot_path = s_dir / "snapshot.json"
+            if snapshot_path.exists():
+                try:
+                    data = json.loads(snapshot_path.read_text())
+                    world = data["world_state"]
+                    results.append(
+                        {
+                            "session_id": s_dir.name,
+                            "player_name": world["player"]["name"],
+                            "location_name": world["locations"][
+                                world["player"]["current_location_id"]
+                            ]["name"],
+                            "turn": world["turn"],
+                            "created_at": s_dir.stat().st_ctime,
+                        }
+                    )
+                except Exception:
+                    continue
+        return sorted(results, key=lambda x: x["created_at"], reverse=True)
+
+    async def load_session(self, session_id: str) -> Optional[GameSession]:
+        """Load a session from disk if it exists."""
+        if session_id in self._sessions:
+            return self._sessions[session_id]
+
+        await self._ensure_init()
+        data_dir = config.DATA_DIR / "sessions" / session_id
+        if not data_dir.exists():
+            return None
+
+        # Similar logic to _create but loading from existing files
+        db_path = data_dir / "events.db"
+        faiss_index_path = data_dir / "faiss.index"
+        faiss_meta_path = data_dir / "faiss_meta.json"
+        snapshot_path = data_dir / "snapshot.json"
+
+        loop = asyncio.get_event_loop()
+
+        def _load():
+            store = EventStore(db_path)
+            snap = load_snapshot(snapshot_path)
+            if snap:
+                world, last_id = snap
+                # Replay any events since snapshot?
+                # For now just trust the snapshot or replay all if snap missing
+            else:
+                world = self._seed.model_copy(deep=True)
+                # Replay all events from DB
+                events = store.get_all()
+                world = rebuild_state(world, events)
+
+            faiss_mem = FAISSMemory(
+                faiss_index_path, faiss_meta_path, config.EMBEDDING_DIM
+            )
+            short_term = ShortTermMemory(config.MAX_SHORT_TERM_TURNS)
+            # Hydrate short term memory from recent NPC_SPOKE events?
+            # For now simplified.
+
+            graph, commit_node = build_graph(
+                store,
+                self._embedder,
+                faiss_mem,
+                short_term,
+                self._client,
+                self._seed,
+            )
+
+            # Determine active NPC
+            npc_id = list(world.npcs.keys())[0]  # Fallback
+            # Maybe store active NPC in world flags or snapshot?
+
+            return GameSession(
+                session_id=session_id,
+                world=world,
+                graph=graph,
+                commit_node=commit_node,
+                store=store,
+                faiss_mem=faiss_mem,
+                short_term=short_term,
+                active_npc_id=npc_id,
+                data_dir=data_dir,
+            )
+
+        try:
+            session = await loop.run_in_executor(None, _load)
+            self._sessions[session_id] = session
+            return session
+        except Exception as e:
+            log.error("Failed to load session %s: %s", session_id, e)
+            return None
+
     def get_session(self, session_id: str) -> Optional[GameSession]:
         return self._sessions.get(session_id)
 
@@ -227,6 +330,21 @@ class SessionManager:
             return False
         session.close()
         log.info("Session destroyed: %s", session_id)
+        return True
+
+    async def save_session(self, session_id: str):
+        """Force save session state to disk."""
+        session = self.get_session(session_id)
+        if not session:
+            return False
+
+        loop = asyncio.get_event_loop()
+
+        def _save():
+            session.faiss_mem.save()
+            save_snapshot(session.world, session.data_dir / "snapshot.json", 0)
+
+        await loop.run_in_executor(None, _save)
         return True
 
     async def process_action(
@@ -271,10 +389,22 @@ class SessionManager:
                     if e.payload.get("target_id") == "player":
                         trust_change += int(e.payload.get("delta", 0))
 
+            # Determine speaker
+            parsed = result.get("parsed_output")
+            speaker_id = active_npc
+            if parsed and parsed.speaker_id:
+                speaker_id = parsed.speaker_id
+
+            npc_obj = session.world.npcs.get(speaker_id)
+            if speaker_id == "narrator":
+                npc_name = "Narrator"
+            else:
+                npc_name = npc_obj.name if npc_obj else speaker_id
+
             return {
                 "npc_dialogue": result.get("npc_dialogue", ""),
-                "npc_id": result["active_npc_id"],
-                "npc_name": session.world.npcs.get(result["active_npc_id"], None),
+                "npc_id": speaker_id,
+                "npc_name": npc_name,
                 "turn": session.world.turn,
                 "trust_change": trust_change,
                 "validation_errors": result.get("validation_errors", []),
@@ -371,6 +501,8 @@ class SessionManager:
             return {
                 "output": f"You have moved to {session.world.locations[new_loc_id].name}.",
                 "command": "/move",
+                "npc_id": "narrator",
+                "npc_name": "Narrator",
             }
 
         elif verb == "/npc":

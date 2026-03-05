@@ -34,6 +34,7 @@ class SwitchNPCRequest(BaseModel):
 
 class SessionInfo(BaseModel):
     session_id: str
+    player_name: str
     turn: int
     active_npc_id: str
     current_location_id: str
@@ -82,6 +83,7 @@ class GameStateResponse(BaseModel):
     location: Optional[LocationInfo] = None
     player: Optional[PlayerInfo] = None
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
+    journal: List[Dict[str, Any]] = Field(default_factory=list)  # Simplified for UI
 
 
 class ActionResponse(BaseModel):
@@ -98,6 +100,14 @@ class ActionResponse(BaseModel):
 class NPCListResponse(BaseModel):
     npcs: List[NPCInfo]
     active_npc_id: str
+
+
+class SaveInfo(BaseModel):
+    session_id: str
+    player_name: str
+    location_name: str
+    turn: int
+    created_at: float
 
 
 class CommandResponse(BaseModel):

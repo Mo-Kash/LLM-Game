@@ -28,6 +28,7 @@ from api.schemas import (
     PlayerInfo,
     CommandResponse,
     ErrorResponse,
+    SaveInfo,
     HealthResponse,
     WSOutMessage,
 )
@@ -142,11 +143,46 @@ async def create_session(req: CreateSessionRequest):
 
     return SessionInfo(
         session_id=session.session_id,
+        player_name=session.world.player.name,
         turn=session.world.turn,
         active_npc_id=session.active_npc_id,
         current_location_id=session.world.player.current_location_id,
         created_at=session.created_at,
     )
+
+
+@router.get("/sessions", response_model=List[SaveInfo])
+async def list_sessions():
+    """List all saved game sessions."""
+    sm = _get_sm()
+    sessions = await sm.list_sessions()
+    return [SaveInfo(**s) for s in sessions]
+
+
+@router.post("/load/{session_id}", response_model=SessionInfo)
+async def load_session(session_id: str):
+    """Load a specific session."""
+    sm = _get_sm()
+    session = await sm.load_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found or corrupt")
+    return SessionInfo(
+        session_id=session.session_id,
+        player_name=session.world.player.name,
+        turn=session.world.turn,
+        active_npc_id=session.active_npc_id,
+        current_location_id=session.world.player.current_location_id,
+        created_at=session.created_at,
+    )
+
+
+@router.post("/save/{session_id}")
+async def save_game(session_id: str):
+    """Manually save game state."""
+    sm = _get_sm()
+    if not await sm.save_session(session_id):
+        raise HTTPException(404, "Session not found")
+    return {"status": "saved"}
 
 
 @router.delete("/session/{session_id}")
@@ -180,6 +216,10 @@ async def get_game_state(session_id: str):
         location=_build_location_info(session),
         player=_build_player_info(session),
         relationships=session.world.relationships,
+        journal=[
+            {"id": e.id, "turn": e.turn, "content": e.content, "timestamp": e.timestamp}
+            for e in session.world.journal
+        ],
     )
 
 
