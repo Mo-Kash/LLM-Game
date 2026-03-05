@@ -108,6 +108,15 @@ export interface SaveInfo {
 	created_at: number;
 }
 
+export interface GameMetadataResponse {
+	title: string;
+	description: string;
+	character_options?: {
+		genders: string[];
+		occupations: Array<{ id: string; name: string; desc: string }>;
+	};
+}
+
 // ── REST Client ────────────────────────────────────────────
 
 class APIClient {
@@ -232,6 +241,12 @@ class APIClient {
 
 	async loadSession(sessionId: string): Promise<SessionInfo> {
 		return this.request<SessionInfo>("POST", `/load/${sessionId}`);
+	}
+
+	// ── Metadata ───────────────────────────────────────────
+
+	async getMetadata(): Promise<GameMetadataResponse> {
+		return this.request<GameMetadataResponse>("GET", "/metadata");
 	}
 }
 

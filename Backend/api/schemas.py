@@ -130,6 +130,12 @@ class HealthResponse(BaseModel):
     active_sessions: int = 0
 
 
+class GameMetadataResponse(BaseModel):
+    title: str = "LLM Game"
+    description: str = ""
+    character_options: Dict[str, Any] = Field(default_factory=dict)
+
+
 # ── WebSocket Messages ────────────────────────────────────────────────────
 
 

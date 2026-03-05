@@ -1,4 +1,38 @@
 {
+	"metadata": {
+		"title": "The Obsidian Flask",
+		"description": "A dark fantasy text adventure set in a treacherous world.",
+		"character_options": {
+			"genders": ["Male", "Female", "Non-binary", "Other"],
+			"occupations": [
+				{
+					"id": "mercenary",
+					"name": "Mercenary",
+					"desc": "A hardened fighter who sells their sword to the highest bidder."
+				},
+				{
+					"id": "scholar",
+					"name": "Scholar",
+					"desc": "Knowledge is your greatest weapon and shield."
+				},
+				{
+					"id": "merchant",
+					"name": "Merchant",
+					"desc": "You know the exact value of everything and the price of nothing."
+				},
+				{
+					"id": "wanderer",
+					"name": "Wanderer",
+					"desc": "The road is your home, and secrets are your currency."
+				},
+				{
+					"id": "thief",
+					"name": "Thief",
+					"desc": "You prefer to operate in the shadows, taking what you please."
+				}
+			]
+		}
+	},
 	"locations": {
 		"tavern_common": {
 			"id": "tavern_common",

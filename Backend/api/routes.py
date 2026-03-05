@@ -31,6 +31,7 @@ from api.schemas import (
     SaveInfo,
     HealthResponse,
     WSOutMessage,
+    GameMetadataResponse,
 )
 from api.session_manager import SessionManager
 
@@ -120,6 +121,30 @@ def _build_player_info(session) -> PlayerInfo:
         inventory=inventory,
         flags=world.player.flags,
     )
+
+
+# ── Metadata Endpoint ──────────────────────────────────────────────────────
+
+
+@router.get("/metadata", response_model=GameMetadataResponse)
+async def get_metadata():
+    """Retrieve top-level game metadata from the seed file."""
+    try:
+        from pathlib import Path
+
+        seed_path = Path("game/world_seed.json")
+        if seed_path.exists():
+            with open(seed_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                meta = data.get("metadata", {})
+                return GameMetadataResponse(
+                    title=meta.get("title", "LLM Game"),
+                    description=meta.get("description", ""),
+                    character_options=meta.get("character_options", {}),
+                )
+    except Exception as e:
+        log.error("Failed to load metadata: %s", e)
+    return GameMetadataResponse()
 
 
 # ── Session Endpoints ─────────────────────────────────────────────────────

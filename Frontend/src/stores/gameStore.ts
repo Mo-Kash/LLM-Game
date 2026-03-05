@@ -22,6 +22,17 @@ interface GameState {
 	playerName: string | null;
 	isConnected: boolean;
 
+	// App Metadata
+	metadata: {
+		title: string;
+		description: string;
+		character_options?: {
+			genders: string[];
+			occupations: Array<{ id: string; name: string; desc: string }>;
+		};
+	} | null;
+	fetchMetadata: () => Promise<void>;
+
 	// Location
 	currentLocation: string;
 	currentLocationName: string;
@@ -137,6 +148,26 @@ export const useGameStore = create<GameState>((set, get) => ({
 	sessionId: null,
 	playerName: null,
 	isConnected: false,
+
+	// App Metadata
+	metadata: null,
+	fetchMetadata: async () => {
+		try {
+			const md = await apiClient.getMetadata();
+			set({ metadata: md });
+			if (md.title) {
+				document.title = md.title;
+			}
+			if (md.description) {
+				const metaDesc = document.querySelector('meta[name="description"]');
+				if (metaDesc) {
+					metaDesc.setAttribute("content", md.description);
+				}
+			}
+		} catch (error) {
+			console.error("[GameStore] Failed to fetch metadata:", error);
+		}
+	},
 
 	// Location
 	currentLocation: "",

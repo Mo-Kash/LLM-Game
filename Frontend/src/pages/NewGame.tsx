@@ -32,13 +32,17 @@ const OCCUPATION_OPTIONS = [
 export default function NewGame() {
 	const navigate = useNavigate();
 	const { setActiveSession } = useSessionStore();
-	const { createSession } = useGameStore();
+	const { createSession, metadata } = useGameStore();
 	const [name, setName] = useState("");
 	const [gender, setGender] = useState("");
 	const [age, setAge] = useState<string>("25");
 	const [occupation, setOccupation] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	const activeGenders = metadata?.character_options?.genders || GENDER_OPTIONS;
+	const activeOccupations =
+		metadata?.character_options?.occupations || OCCUPATION_OPTIONS;
 
 	const isFormValid =
 		name.trim() !== "" &&
@@ -152,7 +156,7 @@ export default function NewGame() {
 								GΞNDΞR IDΞNTITY
 							</label>
 							<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-								{GENDER_OPTIONS.map((opt) => (
+								{activeGenders.map((opt) => (
 									<button
 										key={opt}
 										onClick={() => setGender(opt)}
@@ -176,7 +180,7 @@ export default function NewGame() {
 								PROFΞSSIONAL BACKGROUND
 							</label>
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-								{OCCUPATION_OPTIONS.map((opt) => (
+								{activeOccupations.map((opt) => (
 									<button
 										key={opt.id}
 										onClick={() => setOccupation(opt.name)}

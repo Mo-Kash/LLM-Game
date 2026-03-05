@@ -24,7 +24,7 @@ export const SEED_DIALOGUE: DialogueMessage[] = [
 		id: "1",
 		type: "narration",
 		content:
-			"The door groans open. Smoke curls around your boots as you step into the dim warmth of The Rusted Flagon. The barkeep doesn't look up.",
+			"The door groans open. Smoke curls around your boots as you step into the dim warmth of the tavern. The barkeep doesn't look up.",
 		timestamp: Date.now() - 60000,
 	},
 	{
@@ -128,7 +128,7 @@ export const NPC_DESCRIPTIONS: Record<string, string> = {
 	marlowe:
 		"A former Guild informant who turned his back on the organization. He knows more than he lets on, and every word from his mouth is carefully measured. His eyes never rest.",
 	elara:
-		"The keeper of The Rusted Flagon. She sees everything but says little. The tavern is her domain, and she guards its secrets as fiercely as her own.",
+		"The keeper of the tavern. She sees everything but says little. The tavern is her domain, and she guards its secrets as fiercely as her own.",
 	silas:
 		"A shadow in Guild colors. Silas doesn't speak unless he intends harm, and his silence is heavier than most men's threats. He watches you with predatory patience.",
 	wren: "A traveling minstrel whose songs carry more truth than any official report. Wren trades in rumor and melody, and their laughter hides a sharp, observant mind.",
@@ -140,7 +140,7 @@ export const SEED_JOURNAL: JournalEntry[] = [
 		id: "1",
 		timestamp: Date.now() - 120000,
 		content:
-			"Arrived at The Rusted Flagon. Contact identified as Marlowe Ashwick — former Guild informant.",
+			"Arrived at the tavern. Contact identified as Marlowe Ashwick — former Guild informant.",
 		npcId: "marlowe",
 		tags: ["arrival", "marlowe", "guild"],
 		category: "case",
@@ -183,7 +183,7 @@ export const SEED_SAVE_SLOTS: SaveSlot[] = [
 	{
 		id: "1",
 		timestamp: Date.now() - 3600000,
-		location: "The Rusted Flagon",
+		location: "The Tavern",
 		subLocation: "Common Room",
 		trustSummary: { marlowe: 35 },
 		playtime: 2400,
@@ -207,7 +207,7 @@ export const LOCATIONS: MockLocation[] = [
 		label: "Common Room",
 		connections: ["cellar", "back-alley", "upstairs-room"],
 		description:
-			"The heart of The Rusted Flagon. Smoke hangs low over scarred oak tables. The hearth crackles with dying embers, casting long shadows across the stone floor.",
+			"The heart of the tavern. Smoke hangs low over scarred oak tables. The hearth crackles with dying embers, casting long shadows across the stone floor.",
 		npcs: ["Marlowe Ashwick", "Elara Voss"],
 		tension: "moderate",
 	},

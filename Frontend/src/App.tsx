@@ -15,32 +15,42 @@ import JournalPage from "./pages/Journal";
 import SessionPage from "./pages/Session";
 
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { useGameStore } from "@/stores/gameStore";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-	<QueryClientProvider client={queryClient}>
-		<TooltipProvider>
-			<Toaster />
-			<Sonner />
-			<BrowserRouter>
-				<PauseMenu />
-				<Routes>
-					<Route path="/" element={<MainMenu />} />
-					<Route path="/new-game" element={<NewGame />} />
-					<Route element={<GameLayout />}>
-						<Route path="/game" element={<GamePage />} />
-						<Route path="/world" element={<WorldPage />} />
-						<Route path="/character" element={<CharacterPage />} />
-						<Route path="/npcs" element={<NpcsPage />} />
-						<Route path="/journal" element={<JournalPage />} />
-						<Route path="/session" element={<SessionPage />} />
-					</Route>
-					<Route path="*" element={<NotFound />} />
-				</Routes>
-			</BrowserRouter>
-		</TooltipProvider>
-	</QueryClientProvider>
-);
+const App = () => {
+	const fetchMetadata = useGameStore((state) => state.fetchMetadata);
+
+	useEffect(() => {
+		fetchMetadata();
+	}, [fetchMetadata]);
+
+	return (
+		<QueryClientProvider client={queryClient}>
+			<TooltipProvider>
+				<Toaster />
+				<Sonner />
+				<BrowserRouter>
+					<PauseMenu />
+					<Routes>
+						<Route path="/" element={<MainMenu />} />
+						<Route path="/new-game" element={<NewGame />} />
+						<Route element={<GameLayout />}>
+							<Route path="/game" element={<GamePage />} />
+							<Route path="/world" element={<WorldPage />} />
+							<Route path="/character" element={<CharacterPage />} />
+							<Route path="/npcs" element={<NpcsPage />} />
+							<Route path="/journal" element={<JournalPage />} />
+							<Route path="/session" element={<SessionPage />} />
+						</Route>
+						<Route path="*" element={<NotFound />} />
+					</Routes>
+				</BrowserRouter>
+			</TooltipProvider>
+		</QueryClientProvider>
+	);
+};
 
 export default App;

@@ -6,7 +6,7 @@ import { apiClient, SaveInfo } from "@/services/api";
 
 export default function MainMenu() {
 	const navigate = useNavigate();
-	const { sessionId } = useGameStore();
+	const { sessionId, metadata } = useGameStore();
 	const [saves, setSaves] = useState<SaveInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -71,10 +71,12 @@ export default function MainMenu() {
 			>
 				<div className="text-center">
 					<h1 className="font-heading text-4xl tracking-[0.2em] text-primary">
-						THE RUSTED FLAGON
+						{metadata?.title ? metadata.title.toUpperCase() : "LOADING..."}
 					</h1>
-					<p className="mt-3 font-mono text-xs tracking-[0.3em] text-muted-foreground">
-						ONTOLOGY-AWARE RAG DIALOGUE SYSTEM
+					<p className="mx-auto mt-3 w-96 font-mono text-xs leading-relaxed tracking-[0.3em] text-muted-foreground">
+						{metadata?.description
+							? metadata.description.toUpperCase()
+							: "AWAITING ENGINE..."}
 					</p>
 				</div>
 
