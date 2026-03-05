@@ -2,19 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
-import { SaveInfo } from "@/services/api";
+import { apiClient, SaveInfo } from "@/services/api";
 
 export default function SessionPage() {
 	const navigate = useNavigate();
-	const { listSavedSessions, loadGame } = useGameStore();
+	const { loadGame } = useGameStore();
 	const [saves, setSaves] = useState<SaveInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
+	// Always re-fetch when this page mounts (e.g. after saving)
 	useEffect(() => {
-		listSavedSessions()
+		setIsLoading(true);
+		apiClient
+			.listSessions()
 			.then(setSaves)
+			.catch(console.error)
 			.finally(() => setIsLoading(false));
-	}, [listSavedSessions]);
+	}, []);
 
 	const handleLoad = async (id: string) => {
 		try {

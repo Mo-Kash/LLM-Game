@@ -1,13 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores/gameStore";
+import { apiClient } from "@/services/api";
 
 export function PauseMenu() {
 	const navigate = useNavigate();
 	const { activeModal, openModal, closeModal } = useUIStore();
 	const isOpen = activeModal === "pause";
+	const [hasSaves, setHasSaves] = useState(false);
+
+	useEffect(() => {
+		if (isOpen) {
+			apiClient
+				.listSessions()
+				.then((saves) => setHasSaves(saves.length > 0))
+				.catch(() => setHasSaves(false));
+		}
+	}, [isOpen]);
 
 	useEffect(() => {
 		const handleKey = (e: KeyboardEvent) => {
@@ -26,16 +37,21 @@ export function PauseMenu() {
 			label: "SAVE GAME",
 			action: async () => {
 				await useGameStore.getState().saveGame();
+				setHasSaves(true);
 				closeModal();
 			},
 		},
-		{
-			label: "LOAD GAME",
-			action: () => {
-				closeModal();
-				navigate("/session");
-			},
-		},
+		...(hasSaves
+			? [
+					{
+						label: "LOAD GAME",
+						action: () => {
+							closeModal();
+							navigate("/session");
+						},
+					},
+				]
+			: []),
 		{
 			label: "MAIN MENU",
 			action: () => {

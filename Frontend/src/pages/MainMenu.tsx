@@ -26,16 +26,26 @@ export default function MainMenu() {
 			action: () => navigate("/new-game"),
 			enabled: !isLoading,
 		},
-		{
-			label: "CONTINUE",
-			action: () => navigate("/game"),
-			enabled: !isLoading && (!!sessionId || hasSaves),
-		},
-		{
-			label: "LOAD GAME",
-			action: () => navigate("/session"),
-			enabled: !isLoading && hasSaves,
-		},
+		// Only include Continue if there's an active session or saved games
+		...(!!sessionId || hasSaves
+			? [
+					{
+						label: "CONTINUE",
+						action: () => navigate("/game"),
+						enabled: !isLoading,
+					},
+				]
+			: []),
+		// Only include Load Game if there are saved games
+		...(hasSaves
+			? [
+					{
+						label: "LOAD GAME",
+						action: () => navigate("/session"),
+						enabled: !isLoading,
+					},
+				]
+			: []),
 	];
 
 	return (

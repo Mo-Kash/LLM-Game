@@ -241,8 +241,8 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
         cmd_result = sm.handle_command(session, content)
         return ActionResponse(
             npc_dialogue=cmd_result["output"],
-            npc_id=session.active_npc_id,
-            npc_name="System",
+            npc_id=cmd_result.get("npc_id", session.active_npc_id),
+            npc_name=cmd_result.get("npc_name", "System"),
             turn=session.world.turn,
         )
 

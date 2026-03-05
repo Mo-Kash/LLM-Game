@@ -5,14 +5,13 @@ import { useGameStore } from "@/stores/gameStore";
 import { apiClient, type LocationInfo, type NPCInfo } from "@/services/api";
 
 export default function WorldPage() {
-	const { currentLocation, sessionId, sendAction } = useGameStore();
+	const { currentLocation, sessionId, sendAction, refreshState } =
+		useGameStore();
 	const [locations, setLocations] = useState<LocationInfo[]>([]);
-	const [selectedId, setSelectedId] = useState<string | null>(
-		currentLocation || null,
-	);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Fetch world locations
+	// Fetch world locations (only depends on sessionId)
 	useEffect(() => {
 		if (!sessionId) return;
 		setIsLoading(true);
@@ -20,13 +19,12 @@ export default function WorldPage() {
 			.listLocations(sessionId)
 			.then((list) => {
 				setLocations(list);
-				if (!selectedId) setSelectedId(currentLocation || list[0]?.id);
 			})
 			.catch(console.error)
 			.finally(() => setIsLoading(false));
-	}, [sessionId, currentLocation, selectedId]);
+	}, [sessionId, currentLocation]);
 
-	// Sync selection with player moves for "realtime" feel
+	// Always sync selectedId with currentLocation when it changes
 	useEffect(() => {
 		if (currentLocation) {
 			setSelectedId(currentLocation);
@@ -51,8 +49,9 @@ export default function WorldPage() {
 	};
 
 	const handleTravel = async (locId: string) => {
-		// Only move if we explicitly chose to travel
 		await sendAction(`/move ${locId}`);
+		// Force state refresh to update location, NPCs, etc.
+		await refreshState();
 	};
 
 	if (!sessionId) {

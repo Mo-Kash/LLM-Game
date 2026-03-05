@@ -105,4 +105,8 @@ def _validate_proposal(proposal: WorldUpdateProposal, world: WorldState) -> str:
         if not p.get("key"):
             return "missing key"
 
+    elif t == "JOURNAL_ENTRY_CREATED":
+        if not p.get("content"):
+            return "missing content"
+
     return ""

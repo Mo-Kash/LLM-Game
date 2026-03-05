@@ -27,6 +27,12 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     log.info("NPC Engine API starting...")
     set_session_manager(session_manager)
+    # Eagerly preload embedding model + world seed to eliminate cold-start latency
+    try:
+        await session_manager._ensure_init()
+        log.info("Shared resources preloaded at startup.")
+    except Exception as e:
+        log.warning("Preloading failed (will retry lazily): %s", e)
     yield
     log.info("NPC Engine API shutting down...")
     await session_manager.shutdown()

@@ -24,7 +24,21 @@ export function PlayerInputDock() {
 		setHistoryIndex(-1);
 		setInput("");
 
-		sendAction(curInput, targetNpcId || undefined);
+		// Map addressing target to backend npc_id
+		let npcIdForAction: string | undefined;
+		if (targetNpcId === null) {
+			// General / Nearby — let the backend decide (use active NPC)
+			npcIdForAction = undefined;
+		} else if (targetNpcId === "__self__") {
+			// Self — no NPC target
+			npcIdForAction = undefined;
+		} else if (targetNpcId === "narrator") {
+			npcIdForAction = "narrator";
+		} else {
+			npcIdForAction = targetNpcId;
+		}
+
+		sendAction(curInput, npcIdForAction);
 	}, [isProcessing, sendAction, targetNpcId, input]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -54,37 +68,37 @@ export function PlayerInputDock() {
 	const isCommand = input.startsWith("/");
 	const isDisabled = !sessionId;
 
+	// Addressing options: Self, Narrator, General, + specific NPCs
+	const addressingOptions: { id: string | null; label: string }[] = [
+		{ id: null, label: "GENERAL / NEARBY" },
+		{ id: "__self__", label: "SELF" },
+		{ id: "narrator", label: "NARRATOR" },
+		...presentNpcs.map((npc) => ({
+			id: npc.id,
+			label: npc.name.toUpperCase(),
+		})),
+	];
+
 	return (
 		<div className="border-t border-border bg-card px-4 py-3 pb-6">
-			{/* NPC Selector */}
-			{!isCommand && !isDisabled && presentNpcs.length > 0 && (
+			{/* Addressing Selector */}
+			{!isCommand && !isDisabled && (
 				<div className="mb-3 flex flex-wrap gap-2">
 					<span className="mr-1 self-center font-mono text-[9px] tracking-widest text-muted-foreground">
 						ADDRESSING:
 					</span>
-					<button
-						onClick={() => setTargetNpcId(null)}
-						className={cn(
-							"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
-							targetNpcId === null
-								? "border-primary bg-primary/10 text-primary"
-								: "border-border text-muted-foreground opacity-60 hover:opacity-100",
-						)}
-					>
-						GENERAL / NEARBY
-					</button>
-					{presentNpcs.map((npc) => (
+					{addressingOptions.map((opt) => (
 						<button
-							key={npc.id}
-							onClick={() => setTargetNpcId(npc.id)}
+							key={opt.id ?? "__general__"}
+							onClick={() => setTargetNpcId(opt.id)}
 							className={cn(
 								"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
-								targetNpcId === npc.id
+								targetNpcId === opt.id
 									? "border-primary bg-primary/10 text-primary"
 									: "border-border text-muted-foreground opacity-60 hover:opacity-100",
 							)}
 						>
-							{npc.name.toUpperCase()}
+							{opt.label}
 						</button>
 					))}
 				</div>

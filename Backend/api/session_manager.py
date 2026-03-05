@@ -14,6 +14,7 @@ Sessions are UUID-keyed and stored in-memory with per-session data dirs.
 
 from __future__ import annotations
 import asyncio
+import json
 import logging
 import time
 import uuid
@@ -127,6 +128,10 @@ class SessionManager:
                 api_key=config.CEREBRAS_API_KEY,
                 timeout=config.REQUEST_TIMEOUT,
             )
+            # Warm the embedding model by encoding a dummy sentence
+            if self._embedder:
+                self._embedder.embed("warm up sentence")
+                log.info("Embedding model warmed up.")
             self._initialised = True
             log.info("Shared resources ready.")
 
@@ -482,12 +487,25 @@ class SessionManager:
                 turn=world.turn,
                 event_type=EventType.PLAYER_MOVED,
                 payload={
-                    "from_id": world.player.current_location_id,
-                    "to_id": new_loc_id,
+                    "from_location_id": world.player.current_location_id,
+                    "to_location_id": new_loc_id,
                 },
             )
             session.store.append(move_evt)
             session.world = apply_event(world, move_evt)
+
+            # Add journal entry for the move
+            from schemas.events import Event as _Evt, EventType as _ET
+
+            journal_evt = _Evt(
+                turn=session.world.turn,
+                event_type=_ET.JOURNAL_ENTRY_CREATED,
+                payload={
+                    "content": f"Traveled from {loc.name} to {session.world.locations[new_loc_id].name}."
+                },
+            )
+            session.store.append(journal_evt)
+            session.world = apply_event(session.world, journal_evt)
 
             # Auto-switch NPC to someone in the new location if current is gone
             new_npcs = [

@@ -210,3 +210,17 @@ input[type="number"] {
 	-moz-appearance: textfield;
 	appearance: textfield;
 }
+
+/* Suppress default focus highlights on inputs */
+input,
+textarea,
+select {
+	-webkit-tap-highlight-color: transparent;
+	outline: none !important;
+}
+input:focus,
+textarea:focus,
+select:focus {
+	outline: none !important;
+	box-shadow: none !important;
+}

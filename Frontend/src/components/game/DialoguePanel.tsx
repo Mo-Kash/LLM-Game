@@ -50,11 +50,16 @@ export function DialoguePanel() {
 	const { dialogueHistory } = useGameStore();
 	const scrollRef = useRef<HTMLDivElement>(null);
 
+	// Filter out slash commands from the dialogue display
+	const visibleMessages = dialogueHistory.filter(
+		(msg) => !(msg.type === "player" && msg.content.startsWith("/")),
+	);
+
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [dialogueHistory.length]);
+	}, [visibleMessages.length]);
 
 	return (
 		<div className="flex h-full flex-col">
@@ -68,7 +73,7 @@ export function DialoguePanel() {
 				className="flex-1 space-y-1 overflow-y-auto px-4 py-3"
 			>
 				<AnimatePresence>
-					{dialogueHistory.map((msg) => (
+					{visibleMessages.map((msg) => (
 						<MessageBubble key={msg.id} msg={msg} />
 					))}
 				</AnimatePresence>

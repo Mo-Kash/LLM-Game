@@ -31,6 +31,7 @@ ALLOWED EventTypes and their payload fields:
   LOCATION_STATE_CHANGED→ {{"location_id":"...", "key":"...", "value":...}}
   NPC_STATE_CHANGED     → {{"npc_id":"...", "key":"alive|location_id", "value":...}}
   PLAYER_FLAG_SET       → {{"key":"...", "value":...}}
+  JOURNAL_ENTRY_CREATED → {{"content":"<one-sentence summary of a significant event>"}}
   NPC_SPOKE             → {{}}
 
 HARD RULES:
