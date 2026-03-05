@@ -108,7 +108,7 @@ export interface SaveInfo {
 	location_name: string;
 	turn: number;
 	created_at: number;
-	is_auto?: boolean;
+	is_auto: boolean;
 }
 
 export interface GameMetadataResponse {

@@ -385,28 +385,50 @@ export const useGameStore = create<GameState>((set, get) => ({
 					turn,
 				} = result;
 
-				// 1. Add Narration if exists
-				if (narration && narration.trim()) {
-					get().addMessage({
-						id: `nar-path-${Date.now()}`,
-						type: "narration",
-						speaker: "Narrator",
-						content: narration.trim(),
-						timestamp: Date.now(),
-					});
-				}
+				// Special case: Narrator NPC - combine fields for a single bubble
+				if (npc_id === "narrator") {
+					const text1 = (narration || "").trim();
+					const text2 = (npc_dialogue || "").trim();
+					let combined = "";
 
-				// 2. Add NPC Dialogue if exists
-				if (npc_dialogue && npc_dialogue.trim()) {
-					const type = npc_id === "narrator" ? "narration" : "npc";
-					get().addMessage({
-						id: `npc-path-${Date.now() + 1}`,
-						type: type as MessageType,
-						speaker: npc_name,
-						content: npc_dialogue.trim(),
-						timestamp: Date.now() + 1,
-						trustChange: trust_change || undefined,
-					});
+					if (text1 && text2) {
+						combined = `${text1}\n\n${text2}`;
+					} else {
+						combined = text1 || text2;
+					}
+
+					if (combined) {
+						get().addMessage({
+							id: `nar-npc-${Date.now()}`,
+							type: "narration",
+							speaker: "Narrator",
+							content: combined,
+							timestamp: Date.now(),
+						});
+					}
+				} else {
+					// 1. Add Narration if exists
+					if (narration && narration.trim()) {
+						get().addMessage({
+							id: `nar-path-${Date.now()}`,
+							type: "narration",
+							speaker: "Narrator",
+							content: narration.trim(),
+							timestamp: Date.now(),
+						});
+					}
+
+					// 2. Add NPC Dialogue if exists
+					if (npc_dialogue && npc_dialogue.trim()) {
+						get().addMessage({
+							id: `npc-path-${Date.now() + 1}`,
+							type: "npc",
+							speaker: npc_name,
+							content: npc_dialogue.trim(),
+							timestamp: Date.now() + 1,
+							trustChange: trust_change || undefined,
+						});
+					}
 				}
 
 				// Update turn

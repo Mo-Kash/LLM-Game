@@ -111,6 +111,7 @@ class SaveInfo(BaseModel):
     location_name: str
     turn: int
     created_at: float
+    is_auto: bool = False
 
 
 class CommandResponse(BaseModel):

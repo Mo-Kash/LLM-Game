@@ -317,29 +317,49 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
         }
     )
 
-    if narration_text:
-        session.dialogue_history.append(
-            {
-                "id": str(int(time.time() * 1000) + 1),
-                "type": "narration",
-                "speaker": "Narrator",
-                "content": narration_text,
-                "timestamp": time.time() * 1000,
-            }
-        )
+    # If talking to Narrator, merge fields into one narrative block
+    if result["npc_id"] == "narrator":
+        merged_narrative = ""
+        if narration_text and npc_dialogue_text:
+            merged_narrative = f"{narration_text}\n\n{npc_dialogue_text}"
+        elif narration_text:
+            merged_narrative = narration_text
+        elif npc_dialogue_text:
+            merged_narrative = npc_dialogue_text
 
-    if npc_dialogue_text:
-        is_narrator = result["npc_id"] == "narrator"
-        session.dialogue_history.append(
-            {
-                "id": str(int(time.time() * 1000) + 2),
-                "type": "narration" if is_narrator else "npc",
-                "speaker": npc_name,
-                "content": npc_dialogue_text,
-                "timestamp": time.time() * 1000 + 1,
-                "trustChange": result.get("trust_change"),
-            }
-        )
+        if merged_narrative:
+            session.dialogue_history.append(
+                {
+                    "id": str(int(time.time() * 1000) + 1),
+                    "type": "narration",
+                    "speaker": "Narrator",
+                    "content": merged_narrative.strip(),
+                    "timestamp": time.time() * 1000,
+                }
+            )
+    else:
+        if narration_text:
+            session.dialogue_history.append(
+                {
+                    "id": str(int(time.time() * 1000) + 1),
+                    "type": "narration",
+                    "speaker": "Narrator",
+                    "content": narration_text,
+                    "timestamp": time.time() * 1000,
+                }
+            )
+
+        if npc_dialogue_text:
+            session.dialogue_history.append(
+                {
+                    "id": str(int(time.time() * 1000) + 2),
+                    "type": "npc",
+                    "speaker": npc_name,
+                    "content": npc_dialogue_text,
+                    "timestamp": time.time() * 1000 + 1,
+                    "trustChange": result.get("trust_change"),
+                }
+            )
 
     # Broadcast to WebSocket connections
     ws_msg = WSOutMessage(
