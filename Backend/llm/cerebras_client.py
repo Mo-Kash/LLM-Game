@@ -43,7 +43,7 @@ class CerebrasClient:
     def generate(
         self,
         prompt: str,
-        max_tokens: int = 512,
+        max_tokens: int = 4096,
         temperature: float = 0.35,
         stream: bool = False,
         max_retries: int = 3,
@@ -115,22 +115,47 @@ class CerebrasClient:
     # ── JSON extraction ───────────────────────────────────────────────────
     @staticmethod
     def extract_json(raw: Optional[str]) -> Optional[dict]:
-        """Extract JSON dict from raw LLM output (handles markdown fences)."""
+        """Extract JSON dict from raw LLM output. Attempts to fix minor truncation."""
         if not raw:
             return None
+
+        def _try_parse(text: str) -> Optional[dict]:
+            text = text.strip()
+            # 1. Direct try
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                pass
+
+            # 2. Try adding missing braces/quotes (recursive-ish fixes)
+            # Common truncation: missing last " or }
+            attempts = [
+                text + '"',
+                text + "}",
+                text + '"}',
+                text + '"]}',
+                text + "}]}",
+            ]
+            for candidate in attempts:
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    continue
+            return None
+
         # Try fenced block first
         m = _JSON_FENCE.search(raw)
         if m:
-            try:
-                return json.loads(m.group(1))
-            except json.JSONDecodeError:
-                pass
-        # Try raw JSON
+            res = _try_parse(m.group(1))
+            if res:
+                return res
+
+        # Try raw JSON (first { to last })
         m = _JSON_RAW.search(raw)
         if m:
-            try:
-                return json.loads(m.group(1))
-            except json.JSONDecodeError:
-                pass
-        log.warning("Could not extract JSON from LLM output.")
-        return None
+            res = _try_parse(m.group(1))
+            if res:
+                return res
+
+        # Last resort: try whole thing
+        return _try_parse(raw)

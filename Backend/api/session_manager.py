@@ -203,6 +203,8 @@ class SessionManager:
                 ]
                 npc_id = candidates[0] if candidates else list(world.npcs.keys())[0]
 
+            world.active_npc_id = npc_id
+
             return GameSession(
                 session_id=session_id,
                 world=world,
@@ -217,6 +219,10 @@ class SessionManager:
 
         session = await loop.run_in_executor(None, _create)
         self._sessions[session_id] = session
+
+        # Save initial state so it appears in the list immediately
+        await self.save_session(session_id, is_auto=True)
+
         log.info(
             "Session created: %s (Player: %s, NPC: %s)",
             session_id,
@@ -245,13 +251,16 @@ class SessionManager:
                     try:
                         data = json.loads(snapshot_path.read_text())
                         world = data["world_state"]
+                        loc_id = world["player"]["current_location_id"]
+                        loc_name = (
+                            world["locations"].get(loc_id, {}).get("name", loc_id)
+                        )
+
                         results.append(
                             {
                                 "session_id": f"{s_dir.name}:{save_type}",
                                 "player_name": world["player"]["name"],
-                                "location_name": world["locations"][
-                                    world["player"]["current_location_id"]
-                                ]["name"],
+                                "location_name": loc_name,
                                 "turn": world["turn"],
                                 "created_at": snapshot_path.stat().st_mtime,
                                 "is_auto": save_type == "auto",
@@ -298,7 +307,7 @@ class SessionManager:
                 world, last_id = snap
             else:
                 world = self._seed.model_copy(deep=True)
-                events = store.get_all()
+                events = store.load_all()
                 world = rebuild_state(world, events)
 
             faiss_mem = FAISSMemory(
@@ -315,9 +324,8 @@ class SessionManager:
                 self._seed,
             )
 
-            # Determine active NPC
-            npc_id = list(world.npcs.keys())[0]  # Fallback
-            # Maybe store active NPC in world flags or snapshot?
+            # Determine active NPC from world state
+            npc_id = world.active_npc_id or list(world.npcs.keys())[0]
 
             # Load dialogue_history
             dh = []
@@ -350,7 +358,8 @@ class SessionManager:
             return None
 
     def get_session(self, session_id: str) -> Optional[GameSession]:
-        return self._sessions.get(session_id)
+        original_id = session_id.split(":")[0]
+        return self._sessions.get(original_id)
 
     def destroy_session(self, session_id: str) -> bool:
         session = self._sessions.pop(session_id, None)
@@ -371,8 +380,11 @@ class SessionManager:
         def _save():
             session.faiss_mem.save()
 
+            # Use actual last event ID for the snapshot
+            last_id = session.store.get_last_id()
+
             snap_fname = "snapshot_auto.json" if is_auto else "snapshot.json"
-            save_snapshot(session.world, session.data_dir / snap_fname, 0)
+            save_snapshot(session.world, session.data_dir / snap_fname, last_id)
 
             dh_fname = "dialogue_auto.json" if is_auto else "dialogue.json"
             with open(session.data_dir / dh_fname, "w") as f:
@@ -409,7 +421,8 @@ class SessionManager:
             result = await loop.run_in_executor(None, session.graph.invoke, turn_state)
 
             session.world = result["world"]
-            session.active_npc_id = result["active_npc_id"]
+            session.active_npc_id = result.get("active_npc_id", active_npc)
+            session.world.active_npc_id = session.active_npc_id
 
             # Compute trust change from events
             trust_change = 0

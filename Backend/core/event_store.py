@@ -61,6 +61,12 @@ class EventStore:
         )
         return cur.lastrowid
 
+    def get_last_id(self) -> int:
+        """Returns the ID of the most recent event, or 0 if empty."""
+        conn = self._connect()
+        row = conn.execute("SELECT MAX(id) as max_id FROM events").fetchone()
+        return row["max_id"] or 0
+
     def load_all(self) -> List[Event]:
         """Replay full event log in order."""
         conn = self._connect()

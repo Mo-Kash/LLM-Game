@@ -61,4 +61,5 @@ class WorldState(BaseModel):
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
     # relationships[npc_id][entity_id] = trust delta (-100..100)
     journal: List[JournalEntry] = Field(default_factory=list)
+    active_npc_id: str = ""
     turn: int = 0
