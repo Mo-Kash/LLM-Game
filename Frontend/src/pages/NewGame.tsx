@@ -5,54 +5,47 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useGameStore } from "@/stores/gameStore";
 import { cn } from "@/lib/utils";
 
-const CHARACTER_BACKGROUNDS = [
-	{
-		id: "constable",
-		label: "Former Constable",
-		desc: "You once upheld the law. Now you question it.",
-	},
-	{
-		id: "merchant",
-		label: "Disgraced Merchant",
-		desc: "Coin was your currency. Now it's secrets.",
-	},
-	{
-		id: "scholar",
-		label: "Wandering Scholar",
-		desc: "Knowledge drew you here. Curiosity may be your undoing.",
-	},
-	{
-		id: "thief",
-		label: "Reformed Thief",
-		desc: "Old habits linger like smoke in this place.",
-	},
-];
-
 export default function NewGame() {
 	const navigate = useNavigate();
 	const { setActiveSession } = useSessionStore();
 	const { createSession } = useGameStore();
 	const [name, setName] = useState("");
-	const [background, setBackground] = useState("constable");
+	const [gender, setGender] = useState("");
+	const [age, setAge] = useState<string>("");
+	const [occupation, setOccupation] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	const isFormValid =
+		name.trim() !== "" &&
+		gender.trim() !== "" &&
+		age.trim() !== "" &&
+		occupation.trim() !== "";
+
 	const handleStart = async () => {
+		if (!isFormValid) {
+			setError("Please fill out all fields to continue.");
+			return;
+		}
+
 		setIsCreating(true);
 		setError(null);
 
 		try {
-			// Create a real backend session
-			await createSession();
+			// Create a real backend session with character metadata
+			await createSession({
+				name,
+				gender,
+				age: parseInt(age),
+				occupation,
+			});
 
 			// Update session store with metadata
 			setActiveSession({
 				id: useGameStore.getState().sessionId || `session-${Date.now()}`,
 				createdAt: Date.now(),
-				worldSeed: `${background}-${Date.now().toString(36)}`,
-				background:
-					CHARACTER_BACKGROUNDS.find((b) => b.id === background)?.label ??
-					background,
+				worldSeed: `seed-${Date.now().toString(36)}`,
+				background: occupation, // Using occupation as the primary background descriptor
 				moralAlignment: 50,
 			});
 
@@ -70,12 +63,12 @@ export default function NewGame() {
 	};
 
 	return (
-		<div className="flex h-screen w-screen items-center justify-center bg-background">
+		<div className="flex h-screen w-screen items-center justify-center overflow-y-auto bg-background">
 			<motion.div
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				transition={{ duration: 0.5 }}
-				className="w-full space-y-8 p-8"
+				className="w-full max-w-lg space-y-6 p-8"
 			>
 				<div className="text-center">
 					<h2 className="font-heading text-xl tracking-[0.15em] text-primary">
@@ -93,47 +86,67 @@ export default function NewGame() {
 					</div>
 				)}
 
-				{/* Character Name */}
-				<div className="space-y-2">
-					<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-						NAME
-					</label>
-					<input
-						type="text"
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="Enter your name..."
-						disabled={isCreating}
-						className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary/40 focus:outline-none disabled:opacity-50"
-					/>
-				</div>
+				<div className="grid grid-cols-1 gap-6">
+					{/* Name */}
+					<div className="space-y-2">
+						<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
+							NAME
+						</label>
+						<input
+							type="text"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Your name..."
+							disabled={isCreating}
+							className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+						/>
+					</div>
 
-				{/* Background */}
-				<div className="space-y-3">
-					<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
-						BACKGROUND
-					</label>
-					<div className="grid grid-cols-2 gap-2">
-						{CHARACTER_BACKGROUNDS.map((bg) => (
-							<button
-								key={bg.id}
-								onClick={() => setBackground(bg.id)}
+					<div className="grid grid-cols-2 gap-4">
+						{/* Gender */}
+						<div className="space-y-2">
+							<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
+								GENDER
+							</label>
+							<input
+								type="text"
+								value={gender}
+								onChange={(e) => setGender(e.target.value)}
+								placeholder="e.g. Male, Female, etc."
 								disabled={isCreating}
-								className={cn(
-									"border p-3 text-left transition-all duration-300",
-									background === bg.id
-										? "border-primary/50 bg-secondary"
-										: "border-border hover:border-border hover:bg-secondary/50",
-								)}
-							>
-								<span className="block font-heading text-xs tracking-wider text-foreground">
-									{bg.label}
-								</span>
-								<span className="mt-1 block text-[10px] text-muted-foreground">
-									{bg.desc}
-								</span>
-							</button>
-						))}
+								className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+							/>
+						</div>
+
+						{/* Age */}
+						<div className="space-y-2">
+							<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
+								AGE
+							</label>
+							<input
+								type="number"
+								value={age}
+								onChange={(e) => setAge(e.target.value)}
+								placeholder="30"
+								disabled={isCreating}
+								className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+							/>
+						</div>
+					</div>
+
+					{/* Occupation */}
+					<div className="space-y-2">
+						<label className="font-mono text-[10px] tracking-widest text-muted-foreground">
+							OCCUPATION
+						</label>
+						<input
+							type="text"
+							value={occupation}
+							onChange={(e) => setOccupation(e.target.value)}
+							placeholder="Your current profession..."
+							disabled={isCreating}
+							className="w-full border border-border bg-secondary px-4 py-3 font-body text-sm text-foreground focus:border-primary/40 focus:outline-none"
+						/>
 					</div>
 				</div>
 
@@ -142,28 +155,21 @@ export default function NewGame() {
 					<button
 						onClick={() => navigate("/")}
 						disabled={isCreating}
-						className="flex-1 border border-border px-4 py-3 font-mono text-xs tracking-wider text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+						className="flex-1 border border-border px-4 py-3 font-mono text-xs tracking-wider text-muted-foreground transition-colors hover:text-foreground"
 					>
 						BACK
 					</button>
 					<button
 						onClick={handleStart}
-						disabled={isCreating}
-						className="flex-1 border border-primary/50 bg-secondary px-4 py-3 font-heading text-xs tracking-[0.15em] text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-					>
-						{isCreating ? (
-							<motion.span
-								animate={{ opacity: [1, 0.4, 1] }}
-								transition={{
-									duration: 1.5,
-									repeat: Infinity,
-								}}
-							>
-								CONNECTING...
-							</motion.span>
-						) : (
-							"BEGIN"
+						disabled={isCreating || !isFormValid}
+						className={cn(
+							"flex-1 border px-4 py-3 font-heading text-xs tracking-[0.15em] transition-colors",
+							isFormValid
+								? "border-primary/50 bg-secondary text-primary hover:bg-primary/10"
+								: "cursor-not-allowed border-border text-muted-foreground opacity-50",
 						)}
+					>
+						{isCreating ? "INITIALIZING..." : "BEGIN"}
 					</button>
 				</div>
 			</motion.div>

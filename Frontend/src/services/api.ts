@@ -124,13 +124,21 @@ class APIClient {
 
 	// ── Session ────────────────────────────────────────────
 
-	async createSession(
-		defaultNpcId = "gareth_barkeep",
-		reset = false,
-	): Promise<SessionInfo> {
+	async createSession(config: {
+		name: string;
+		gender: string;
+		age: number;
+		occupation: string;
+		defaultNpcId?: string;
+		reset?: boolean;
+	}): Promise<SessionInfo> {
 		return this.request<SessionInfo>("POST", "/session", {
-			default_npc_id: defaultNpcId,
-			reset,
+			name: config.name,
+			gender: config.gender,
+			age: config.age,
+			occupation: config.occupation,
+			default_npc_id: config.defaultNpcId ?? "gareth_barkeep",
+			reset: config.reset ?? false,
 		});
 	}
 

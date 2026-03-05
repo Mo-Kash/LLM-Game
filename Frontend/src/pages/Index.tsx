@@ -8,13 +8,7 @@ const Index = () => {
 			{/* Main — Dialogue + Input */}
 			<div className="flex flex-1 flex-col">
 				<div className="flex flex-1 overflow-hidden">
-					<div className="flex flex-1 flex-col">
-						<DialoguePanel />
-					</div>
-					{/* Scene sidebar */}
-					<div className="flex w-[300px] flex-col border-l border-border bg-card/30">
-						<LocationDisplay />
-					</div>
+					<DialoguePanel />
 				</div>
 				<PlayerInputDock />
 			</div>

@@ -133,7 +133,13 @@ class SessionManager:
     # ── Session lifecycle ──────────────────────────────────────────────────
 
     async def create_session(
-        self, default_npc_id: str = "gareth_barkeep", reset: bool = False
+        self,
+        name: str,
+        gender: str,
+        age: int,
+        occupation: str,
+        default_npc_id: str = "gareth_barkeep",
+        reset: bool = False,
     ) -> GameSession:
         await self._ensure_init()
 
@@ -156,6 +162,13 @@ class SessionManager:
         def _create():
             store = EventStore(db_path)
             world = self._seed.model_copy(deep=True)
+
+            # Initialize player metadata
+            world.player.name = name
+            world.player.gender = gender
+            world.player.age = age
+            world.player.occupation = occupation
+
             store.append(Event(turn=0, event_type=EventType.SESSION_START, payload={}))
 
             faiss_mem = FAISSMemory(
@@ -197,7 +210,12 @@ class SessionManager:
 
         session = await loop.run_in_executor(None, _create)
         self._sessions[session_id] = session
-        log.info("Session created: %s (NPC: %s)", session_id, session.active_npc_id)
+        log.info(
+            "Session created: %s (Player: %s, NPC: %s)",
+            session_id,
+            name,
+            session.active_npc_id,
+        )
         return session
 
     def get_session(self, session_id: str) -> Optional[GameSession]:

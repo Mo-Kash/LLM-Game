@@ -130,6 +130,10 @@ async def create_session(req: CreateSessionRequest):
     sm = _get_sm()
     try:
         session = await sm.create_session(
+            name=req.name,
+            gender=req.gender,
+            age=req.age,
+            occupation=req.occupation,
             default_npc_id=req.default_npc_id,
             reset=req.reset,
         )
@@ -326,8 +330,22 @@ async def list_locations(session_id: str):
             name=loc.name,
             description=loc.description,
             connected_to=loc.connected_to,
-            npcs_present=[],  # full list is too heavy, maybe skip npcs/objects
-            objects_here=[],
+            npcs_present=[
+                _build_npc_info(session, n)
+                for n in session.world.npcs.values()
+                if n.location_id == loc.id and n.alive
+            ],
+            objects_here=[
+                ObjectInfo(
+                    id=o.id,
+                    name=o.name,
+                    description=o.description,
+                    location_id=o.location_id,
+                    properties=o.properties,
+                )
+                for o in session.world.objects.values()
+                if o.location_id == loc.id
+            ],
             state=loc.state,
         )
         for loc in session.world.locations.values()

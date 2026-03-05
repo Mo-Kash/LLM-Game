@@ -92,7 +92,7 @@ The frontend uses a modern React architecture with centralized state management:
 
 #### Core Game Engine
 
-- CLI game loop with interactive command processing
+- Event-driven engine with real-time state synchronization
 - Event-driven architecture with SQLite persistence
 - State management through event sourcing
 - Snapshot system for fast state recovery
@@ -236,7 +236,7 @@ cp .env.example .env
 5. **Initialize database**
 
 ```bash
-python main.py --reset  # This creates the initial database and world state
+python server.py --reset  # This creates the initial database and world state
 ```
 
 ### Frontend Setup
@@ -438,7 +438,7 @@ npm run test
 #### Backend
 
 - **Import errors**: Ensure virtual environment is activated
-- **Database errors**: Run `python main.py --reset` to reinitialize
+- **Database errors**: Run `python server.py --reset` to reinitialize
 - **API key errors**: Verify Cerebras API key in `.env`
 - **Port conflicts**: Change API_PORT in configuration
 

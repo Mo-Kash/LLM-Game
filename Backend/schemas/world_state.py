@@ -36,6 +36,10 @@ class WorldObject(BaseModel):
 
 
 class PlayerState(BaseModel):
+    name: str = "Unknown"
+    gender: str = "Unknown"
+    age: int = 30
+    occupation: str = "Wanderer"
     current_location_id: str
     inventory: List[str] = Field(default_factory=list)  # object ids
     flags: Dict[str, Any] = Field(default_factory=dict)

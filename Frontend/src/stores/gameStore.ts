@@ -58,7 +58,12 @@ interface GameState {
 	// ── Backend integration actions ──────────────────────────
 
 	/** Create a new game session on the backend */
-	createSession: (defaultNpcId?: string) => Promise<void>;
+	createSession: (metadata: {
+		name: string;
+		gender: string;
+		age: number;
+		occupation: string;
+	}) => Promise<void>;
 
 	/** Refresh state from the backend */
 	refreshState: () => Promise<void>;
@@ -189,9 +194,11 @@ export const useGameStore = create<GameState>()(
 
 			// ── Backend integration ─────────────────────────────────
 
-			createSession: async (defaultNpcId = "gareth_barkeep") => {
+			createSession: async (metadata) => {
 				try {
-					const session = await apiClient.createSession(defaultNpcId);
+					const session = await apiClient.createSession({
+						...metadata,
+					});
 					set({
 						sessionId: session.session_id,
 						turn: session.turn,

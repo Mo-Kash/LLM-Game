@@ -19,4 +19,4 @@ class LLMOutput(BaseModel):
         default_factory=list
     )  # must be empty / guarded
     rule_flags: List[str] = Field(default_factory=list)
-    npc_response: str  # streamed to CLI
+    npc_response: str  # streamed to client

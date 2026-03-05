@@ -61,6 +61,13 @@ HISTORY_BLOCK = """=== RECENT DIALOGUE ===
 {history}
 """
 
+PLAYER_BLOCK = """=== PLAYER IDENTITY ===
+Name: {player_name}
+Gender: {player_gender}
+Age: {player_age}
+Occupation: {player_occupation}
+"""
+
 QUERY_BLOCK = """=== CURRENT TURN {turn} ===
 Player says: \"{player_input}\"
 
@@ -124,6 +131,13 @@ def build_prompt(
         world_rules="\n  ".join(world.rules) or "none",
     )
 
+    player_section = PLAYER_BLOCK.format(
+        player_name=world.player.name,
+        player_gender=world.player.gender,
+        player_age=world.player.age,
+        player_occupation=world.player.occupation,
+    )
+
     mem_section = MEMORY_BLOCK.format(memories=mem_lines)
     hist_section = HISTORY_BLOCK.format(history=history)
     query_section = QUERY_BLOCK.format(
@@ -133,7 +147,13 @@ def build_prompt(
     )
 
     prompt = (
-        SYSTEM_BLOCK + "\n" + world_section + mem_section + hist_section + query_section
+        SYSTEM_BLOCK
+        + "\n"
+        + world_section
+        + player_section
+        + mem_section
+        + hist_section
+        + query_section
     )
 
     # Trim to max_chars if needed (trim memories first)

@@ -26,6 +26,13 @@ export default function WorldPage() {
 			.finally(() => setIsLoading(false));
 	}, [sessionId, currentLocation, selectedId]);
 
+	// Sync selection with player moves for "realtime" feel
+	useEffect(() => {
+		if (currentLocation) {
+			setSelectedId(currentLocation);
+		}
+	}, [currentLocation]);
+
 	// Fetch detailed current location whenever we move
 	useEffect(() => {
 		if (!sessionId || !currentLocation) return;
@@ -39,8 +46,12 @@ export default function WorldPage() {
 
 	const selected = locations.find((l) => l.id === selectedId);
 
+	const handleSelect = (locId: string) => {
+		setSelectedId(locId);
+	};
+
 	const handleTravel = async (locId: string) => {
-		// Use slash command to travel deterministically
+		// Only move if we explicitly chose to travel
 		await sendAction(`/move ${locId}`);
 	};
 
@@ -118,7 +129,7 @@ export default function WorldPage() {
 							return (
 								<button
 									key={connId}
-									onClick={() => handleTravel(connId)}
+									onClick={() => handleSelect(connId)}
 									className="flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary/50"
 								>
 									<div className="flex items-center gap-2">
@@ -127,7 +138,7 @@ export default function WorldPage() {
 										</span>
 									</div>
 									<span className="font-mono text-[9px] text-muted-foreground/50">
-										Travel here
+										View location
 									</span>
 								</button>
 							);
@@ -210,7 +221,7 @@ export default function WorldPage() {
 								{selected.connected_to.map((connId: string) => (
 									<button
 										key={connId}
-										onClick={() => handleTravel(connId)}
+										onClick={() => handleSelect(connId)}
 										className="border border-border px-2 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
 									>
 										→ {connId.replace(/_/g, " ")}

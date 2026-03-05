@@ -1,10 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
+import { useSessionStore } from "@/stores/sessionStore";
 
 export default function MainMenu() {
 	const navigate = useNavigate();
 	const { sessionId } = useGameStore();
+	const { saveSlots } = useSessionStore();
+
+	const hasSaves = saveSlots.length > 0;
 
 	const menuItems = [
 		{
@@ -15,12 +19,12 @@ export default function MainMenu() {
 		{
 			label: "CONTINUE",
 			action: () => navigate("/game"),
-			enabled: !!sessionId,
+			enabled: !!sessionId || hasSaves,
 		},
 		{
 			label: "LOAD GAME",
 			action: () => navigate("/session"),
-			enabled: true,
+			enabled: hasSaves,
 		},
 	];
 

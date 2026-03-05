@@ -12,6 +12,10 @@ from pydantic import BaseModel, Field
 
 
 class CreateSessionRequest(BaseModel):
+    name: str
+    gender: str
+    age: int
+    occupation: str
     default_npc_id: str = "gareth_barkeep"
     reset: bool = False
 

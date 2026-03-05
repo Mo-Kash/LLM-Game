@@ -263,19 +263,23 @@ def make_node_event_commit(
 
 
 def node_output(state: TurnState) -> TurnState:
-    """Emit NPC dialogue to stdout."""
+    """Turn lifecycle end node. Logs output metadata."""
     npc_id = state.get("active_npc_id", "NPC")
     world = state["world"]
     npc = world.npcs.get(npc_id)
     npc_name = npc.name if npc else npc_id
     elapsed = state.get("elapsed_ms", 0)
 
-    print(f"\n\033[1;36m{npc_name}:\033[0m {state['npc_dialogue']}")
-    print(f"\033[2m[Turn {world.turn} | {elapsed:.0f}ms]\033[0m")
+    log.info(
+        "Turn %d complete: %s responded in %.0fms",
+        world.turn,
+        npc_name,
+        elapsed,
+    )
 
     if state.get("validation_errors"):
         for err in state["validation_errors"]:
-            log.debug("Validation: %s", err)
+            log.debug("Validation error: %s", err)
 
     return state
 

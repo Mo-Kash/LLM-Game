@@ -50,8 +50,6 @@ class CerebrasClient:
     ) -> str:
         """
         Returns full response text.
-        If stream=True, tokens are printed to stdout in real-time
-        and the full assembled string is returned.
         Handles retries for rate limits (429).
         """
         retries = 0
@@ -70,19 +68,25 @@ class CerebrasClient:
                 else:
                     return self._stream_generate(prompt, max_tokens, temperature)
             except Exception as exc:
-                is_rate_limit = "429" in str(exc) or "rate_limit" in str(exc).lower() or "too_many_requests" in str(exc).lower()
-                
+                is_rate_limit = (
+                    "429" in str(exc)
+                    or "rate_limit" in str(exc).lower()
+                    or "too_many_requests" in str(exc).lower()
+                )
+
                 if is_rate_limit and retries < max_retries:
-                    log.warning(f"Rate limited by Cerebras. Retrying in {backoff}s... (Attempt {retries + 1}/{max_retries})")
+                    log.warning(
+                        f"Rate limited by Cerebras. Retrying in {backoff}s... (Attempt {retries + 1}/{max_retries})"
+                    )
                     time.sleep(backoff)
                     retries += 1
                     backoff *= 2  # Exponential backoff
                     continue
-                
+
                 log.error(f"Cerebras generation error (Attempt {retries + 1}): {exc}")
                 if retries >= max_retries:
                     raise exc
-                
+
                 # For non-429 errors, maybe retry once or just raise
                 retries += 1
                 time.sleep(1)
@@ -90,10 +94,8 @@ class CerebrasClient:
         return ""
 
     def _stream_generate(self, prompt: str, max_tokens: int, temperature: float) -> str:
-        """SSE streaming; prints NPC dialogue tokens live, returns full text."""
+        """SSE streaming; returns full text."""
         full_text = []
-        in_dialogue = False
-        dialogue_key = '"npc_response":'
 
         stream = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
@@ -107,16 +109,7 @@ class CerebrasClient:
             token = chunk.choices[0].delta.content or ""
             if token:
                 full_text.append(token)
-                # Detect when we enter npc_response value for live output
-                combined = "".join(full_text)
-                if not in_dialogue and dialogue_key in combined:
-                    in_dialogue = True
-                if in_dialogue:
-                    sys.stdout.write(token)
-                    sys.stdout.flush()
 
-        if in_dialogue:
-            print()  # newline after streamed dialogue
         return "".join(full_text)
 
     # ── JSON extraction ───────────────────────────────────────────────────

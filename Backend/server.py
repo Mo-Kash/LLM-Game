@@ -2,16 +2,17 @@
 """
 NPC Engine — API server entry point.
 Usage:
-    python server.py [--host HOST] [--port PORT] [--reload]
+    python server.py [--host HOST] [--port PORT] [--reload] [--reset]
 
-This starts the FastAPI server. The CLI (main.py) remains separate
-and fully functional — both share the same core engine modules.
+This starts the FastAPI server. The project runs as web-only,
+serving the NPC engine via REST and WebSockets.
 """
 
 from __future__ import annotations
 import argparse
 import logging
 import sys
+import shutil
 
 import config
 
@@ -23,6 +24,9 @@ def main():
     parser.add_argument(
         "--reload", action="store_true", help="Enable auto-reload (dev)"
     )
+    parser.add_argument(
+        "--reset", action="store_true", help="Wipe all session data and start fresh"
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
@@ -32,6 +36,22 @@ def main():
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         datefmt="%H:%M:%S",
     )
+
+    if args.reset:
+        logging.info("Resetting engine state (wiping data directory)...")
+        # Wipe global engine files
+        config.DB_PATH.unlink(missing_ok=True)
+        config.SNAPSHOT_PATH.unlink(missing_ok=True)
+        config.FAISS_INDEX_PATH.unlink(missing_ok=True)
+        config.FAISS_META_PATH.unlink(missing_ok=True)
+        config.EMBED_CACHE_PATH.unlink(missing_ok=True)
+
+        # Wipe all sessions
+        sessions_dir = config.DATA_DIR / "sessions"
+        if sessions_dir.exists():
+            shutil.rmtree(sessions_dir)
+            sessions_dir.mkdir(parents=True)
+        logging.info("Reset complete.")
 
     try:
         import uvicorn
