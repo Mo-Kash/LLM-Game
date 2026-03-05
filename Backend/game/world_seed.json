@@ -1,103 +1,194 @@
 {
-  "locations": {
-    "tavern_common": {
-      "id": "tavern_common",
-      "name": "The Rusted Flagon - Common Room",
-      "description": "A dim, smoky tavern. Firelight catches on pewter tankards. The air smells of tallow and old wood.",
-      "connected_to": ["tavern_cellar", "tavern_backroom", "market_square"],
-      "state": {}
-    },
-    "tavern_cellar": {
-      "id": "tavern_cellar",
-      "name": "The Rusted Flagon - Cellar",
-      "description": "Low stone arches, barrels stacked high, a faint smell of mildew and spilled wine.",
-      "connected_to": ["tavern_common"],
-      "state": {}
-    },
-    "tavern_backroom": {
-      "id": "tavern_backroom",
-      "name": "The Rusted Flagon - Back Room",
-      "description": "A narrow room used for private dealings. One guttering candle on a scarred table.",
-      "connected_to": ["tavern_common"],
-      "state": {}
-    },
-    "market_square": {
-      "id": "market_square",
-      "name": "Ashford Market Square",
-      "description": "A cobbled square ringed by shuttered stalls. A covered well stands at its centre.",
-      "connected_to": ["tavern_common"],
-      "state": {}
-    }
-  },
-  "npcs": {
-    "gareth_barkeep": {
-      "id": "gareth_barkeep",
-      "name": "Gareth",
-      "location_id": "tavern_common",
-      "description": "A broad-shouldered barkeep with a salt-and-pepper beard and watchful grey eyes.",
-      "personality": "Guarded but fair. Speaks in short sentences. Respects those who pay their tab. Distrusts the Guild.",
-      "knowledge": [
-        "A merchant named Aldric Voss went missing three days ago after meeting someone in the back room.",
-        "The Merchants Guild has been pressuring local traders.",
-        "There is a locked strongbox hidden behind the third barrel on the east wall of the cellar.",
-        "The town guard captain Maren is on the Guild's payroll."
-      ],
-      "secrets": [
-        "Gareth saw a Guild enforcer named Thorn leave the backroom the night Aldric vanished.",
-        "The strongbox contains Aldric's ledger - proof of Guild extortion."
-      ],
-      "alive": true
-    },
-    "lira_barmaid": {
-      "id": "lira_barmaid",
-      "name": "Lira",
-      "location_id": "tavern_common",
-      "description": "A young woman with ink-stained fingers and an overly cheerful demeanour that doesn't reach her eyes.",
-      "personality": "Nervous, eager to please, hiding something. Talks too much when frightened.",
-      "knowledge": [
-        "Aldric was a regular. He always ordered the house wine and sat by the window.",
-        "A hooded figure waited for Aldric in the back room."
-      ],
-      "secrets": [
-        "Lira was paid by the Guild to report on who Aldric spoke to.",
-        "She deeply regrets it and fears for her safety."
-      ],
-      "alive": true
-    }
-  },
-  "objects": {
-    "house_wine_bottle": {
-      "id": "house_wine_bottle",
-      "name": "Bottle of House Wine",
-      "description": "A dark bottle with a wax seal. Cheap but honest.",
-      "location_id": "tavern_common",
-      "owner_id": null,
-      "properties": { "drinkable": true }
-    },
-    "torn_note": {
-      "id": "torn_note",
-      "name": "Torn Note",
-      "description": "A scrap of parchment with the words 'THE CELLAR - MIDNIGHT' in hurried script.",
-      "location_id": "tavern_backroom",
-      "owner_id": null,
-      "properties": { "readable": true }
-    }
-  },
-  "rules": [
-    "NPCs only reveal secrets if trust >= 30 or player presents compelling evidence.",
-    "Players cannot enter locked areas without a key or a reason accepted by the NPC.",
-    "NPCs will not admit Guild involvement until confronted with direct evidence.",
-    "Violence is possible but immediately raises world tension (PLAYER_FLAG_SET tension += 1).",
-    "The strongbox cannot be opened without the key (not yet in world)."
-  ],
-  "player": {
-    "current_location_id": "tavern_common",
-    "inventory": [],
-    "flags": {}
-  },
-  "relationships": {
-    "gareth_barkeep": { "player": 0 },
-    "lira_barmaid": { "player": 5 }
-  },
-  "turn": 0
+	"locations": {
+		"tavern_common": {
+			"id": "tavern_common",
+			"name": "The Obsidian Flask - Common Room",
+			"description": "A sprawling, multi-level tavern lit by faintly glowing crystal chandeliers. The air is thick with the scent of spiced wine, roasted wyvern, and the murmur of mercenaries, cutthroats, and scheming merchants.",
+			"connected_to": [
+				"tavern_cellar",
+				"tavern_backroom",
+				"obsidian_courtyard",
+				"upper_balcony"
+			],
+			"state": {}
+		},
+		"tavern_cellar": {
+			"id": "tavern_cellar",
+			"name": "The Obsidian Flask - Shadowed Cellar",
+			"description": "Damp stone walls covered in luminescent moss. Enormous casks of darkfire ale line the walls. A faint, unnatural chill emanates from a bricked-up archway at the far end.",
+			"connected_to": ["tavern_common"],
+			"state": {}
+		},
+		"tavern_backroom": {
+			"id": "tavern_backroom",
+			"name": "The Obsidian Flask - Velvet Parlor",
+			"description": "A secluded room draped in heavy crimson velvet. A circular oak table sits in the center, scarred with dagger marks and stains of questionable origin. Sound is magically dampened here.",
+			"connected_to": ["tavern_common"],
+			"state": {}
+		},
+		"upper_balcony": {
+			"id": "upper_balcony",
+			"name": "The Obsidian Flask - Upper Balcony",
+			"description": "A rickety wooden balcony overlooking the common room below. Shadows pool in the corners, perfect for listening in on the drunken tales of patrons.",
+			"connected_to": ["tavern_common"],
+			"state": {}
+		},
+		"obsidian_courtyard": {
+			"id": "obsidian_courtyard",
+			"name": "Obsidian Courtyard",
+			"description": "An open-air courtyard paved with jagged black stones. A dead, twisted tree grows in the center, its branches laden with silent, watching ravens.",
+			"connected_to": ["tavern_common", "market_square", "alchemists_alley"],
+			"state": {}
+		},
+		"market_square": {
+			"id": "market_square",
+			"name": "The Weeping Market",
+			"description": "A bustling, chaotic bazaar where merchants sell everything from cursed artifacts to exotic silks. Criers yell above the din, and pickpockets stalk the distracted crowds.",
+			"connected_to": ["obsidian_courtyard"],
+			"state": {}
+		},
+		"alchemists_alley": {
+			"id": "alchemists_alley",
+			"name": "Alchemist's Alley",
+			"description": "A narrow, twisting alley choked with strangely colored smog. Bubbling sounds and occasional explosions echo from the shuttered workshops.",
+			"connected_to": ["obsidian_courtyard", "hidden_sanctum"],
+			"state": {}
+		},
+		"hidden_sanctum": {
+			"id": "hidden_sanctum",
+			"name": "The Hidden Sanctum",
+			"description": "A small, heavily warded chamber filled with ancient tomes, shifting starmaps, and glass jars containing preserved, glowing organs. Dust motes dance in the magical ambient light.",
+			"connected_to": ["alchemists_alley"],
+			"state": {}
+		}
+	},
+	"npcs": {
+		"gareth_barkeep": {
+			"id": "gareth_barkeep",
+			"name": "Gareth Ironhand",
+			"location_id": "tavern_common",
+			"description": "A massive figure missing his left eye. His right arm is a complex prosthesis of brass and iron. He fiercely polishes a glass while scanning the room.",
+			"personality": "Gruff, pragmatic, and fiercely protective of his tavern. He speaks in a low rumble. He hates magic but respects coin and physical strength. Very observant.",
+			"knowledge": [
+				"A smuggler named Vane was asking about an ancient relic three nights ago.",
+				"The Velvet Parlor is currently rented by the Silk Cloaks, a dangerous local gang.",
+				"The bricked-up arch in the cellar sometimes whispers when the moon is new.",
+				"Lira owes a massive debt to the Silk Cloaks."
+			],
+			"secrets": [
+				"Gareth used to be an enforcer for the Silk Cloaks before he lost his arm and eye.",
+				"He has a hidden compartment under the bar holding a masterwork hand-cannon."
+			],
+			"alive": true
+		},
+		"lira_barmaid": {
+			"id": "lira_barmaid",
+			"name": "Lira",
+			"location_id": "tavern_common",
+			"description": "A wiry, fast-moving woman with vividly dyed purple hair. She wears a patchwork leather vest with too many pockets.",
+			"personality": "Cynical, razor-sharp wit, and dangerously observant. She plays the fool but is constantly calculating escape routes and angles.",
+			"knowledge": [
+				"Vane left a locked wooden puzzle box with her before he vanished.",
+				"The ravens in the Obsidian Courtyard are familiars belonging to the mad alchemist, Vorn.",
+				"Players of high status or wealth are targets for pickpockets in the Weeping Market."
+			],
+			"secrets": [
+				"Lira is actively looking to sell Vane's puzzle box to the highest bidder to pay off her debt.",
+				"She knows a secret path over the rooftops from the Upper Balcony to Alchemist's Alley."
+			],
+			"alive": true
+		},
+		"vorn_alchemist": {
+			"id": "vorn_alchemist",
+			"name": "Vorn the Mad",
+			"location_id": "hidden_sanctum",
+			"description": "An ancient, rail-thin elf smelling of brimstone and lotus. His robes are singed, and his eyes wildly dart around the room. He often speaks to people who aren't there.",
+			"personality": "Erratic, paranoid, and brilliant. He transitions rapidly from whispering conspiratorially to shouting. He constantly references cosmic horrors and unseen forces.",
+			"knowledge": [
+				"The puzzle box Lira has contains a shard of a shattered god's soul.",
+				"The whispering in the cellar is the resting place of a bound demon.",
+				"Magic is unraveling in this city, caused by the Silk Cloaks' reckless rituals."
+			],
+			"secrets": [
+				"Vorn caused the explosion that killed his apprentice, a fact that torments him to insanity.",
+				"He is preparing to open the arch in the cellar to harness the demon's power."
+			],
+			"alive": true
+		},
+		"silas_thief": {
+			"id": "silas_thief",
+			"name": "Silas",
+			"location_id": "market_square",
+			"description": "A charming, unnervingly handsome half-elf in a pristine white coat. He nervously flips a gold coin between his knuckles.",
+			"personality": "Smooth-talking, overly friendly, and highly manipulative. He always tries to seem helpful while figuring out how to exploit someone. Fearful of the Silk Cloaks.",
+			"knowledge": [
+				"The Silk Cloaks have placed a bounty on Vane's head, dead or alive.",
+				"Gareth's iron iron hand was custom-built by Vorn.",
+				"There is a hidden entrance to the Velvet Parlor from the Upper Balcony."
+			],
+			"secrets": [
+				"Silas is the one who revealed Vane's location to the Silk Cloaks.",
+				"Silas is terrified that Lira will figure out his betrayal."
+			],
+			"alive": true
+		}
+	},
+	"objects": {
+		"house_wine_bottle": {
+			"id": "house_wine_bottle",
+			"name": "Bottle of Darkfire Ale",
+			"description": "A heavy stone jug. The contents are pitch black and slightly warm to the touch. It smells like roasted malt and danger.",
+			"location_id": "tavern_common",
+			"owner_id": null,
+			"properties": { "drinkable": true, "effect": "minor_hallucinations" }
+		},
+		"torn_note": {
+			"id": "torn_note",
+			"name": "Blood-Stained Ledger",
+			"description": "A small leather-bound book. The last entry reads: 'Vorn demands the puzzle box. The cellar must be opened.'",
+			"location_id": "tavern_backroom",
+			"owner_id": null,
+			"properties": { "readable": true }
+		},
+		"puzzle_box": {
+			"id": "puzzle_box",
+			"name": "Vane's Puzzle Box",
+			"description": "A cube of intricate, interlocking gears made of an unknown, iridescent metal. It hums faintly.",
+			"location_id": null,
+			"owner_id": "lira_barmaid",
+			"properties": { "puzzle": true, "locked": true }
+		},
+		"brass_key": {
+			"id": "brass_key",
+			"name": "Heavy Brass Key",
+			"description": "An oversized key that smells of soot, presumably for the Velvet Parlor.",
+			"location_id": "upper_balcony",
+			"owner_id": null,
+			"properties": {}
+		}
+	},
+	"rules": [
+		"NPCs will naturally weave elements of their surroundings and the player's identity (Age, Gender, Occupation) into their dialogue.",
+		"NPCs only reveal secrets if trust >= 60 or if the player presents compelling, context-aware evidence.",
+		"The player's occupation profoundly impacts how characters treat them. For example, intellectuals or scholars will intrigue Vorn, while Gareth respects soldiers or laborers.",
+		"Violence immediately raises world tension and permanently lowers trust with Gareth.",
+		"Lira will outright refuse to speak about the puzzle box unless bribed or physically intimidated.",
+		"If the player knows about Silas's betrayal, Silas will attempt to flee or lie frantically.",
+		"The demon behind the cellar archway cannot be accessed without unbinding the magical wards (requires high trust with Vorn or a specific artifact)."
+	],
+	"player": {
+		"current_location_id": "tavern_common",
+		"inventory": [],
+		"flags": {
+			"tension": 0,
+			"world_state": "stable"
+		}
+	},
+	"relationships": {
+		"gareth_barkeep": { "player": 0 },
+		"lira_barmaid": { "player": -5 },
+		"vorn_alchemist": { "player": -10 },
+		"silas_thief": { "player": 10 }
+	},
+	"turn": 0
 }

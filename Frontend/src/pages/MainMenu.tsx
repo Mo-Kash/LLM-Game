@@ -31,7 +31,20 @@ export default function MainMenu() {
 			? [
 					{
 						label: "CONTINUE",
-						action: () => navigate("/game"),
+						action: async () => {
+							if (sessionId) {
+								navigate("/game");
+								return;
+							}
+							if (saves.length > 0) {
+								try {
+									await useGameStore.getState().loadGame(saves[0].session_id);
+									navigate("/game");
+								} catch (err) {
+									console.error(err);
+								}
+							}
+						},
 						enabled: !isLoading,
 					},
 				]

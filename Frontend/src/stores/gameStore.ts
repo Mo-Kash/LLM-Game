@@ -82,7 +82,7 @@ interface GameState {
 	switchNPC: (npcId: string) => Promise<void>;
 
 	/** Trigger manual save on backend */
-	saveGame: () => Promise<void>;
+	saveGame: () => Promise<boolean>;
 
 	/** Load an existing session */
 	loadGame: (sessionId: string) => Promise<void>;
@@ -128,6 +128,7 @@ function toFrontendNPC(
 		relationshipTier:
 			trust > 60 ? "confidant" : trust > 30 ? "acquaintance" : "stranger",
 		suspicion: Math.max(0, -trust),
+		locationId: info.location_id,
 	};
 }
 
@@ -273,16 +274,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 				}));
 			}
 
-			// All NPCs in location — fully replace (don't merge with old location NPCs)
+			// All NPCs in location — accumulate
 			if (state.location?.npcs_present) {
-				const npcsRecord: Record<string, NPC> = {};
+				const npcsRecord: Record<string, NPC> = { ...get().npcs };
 				for (const npcInfo of state.location.npcs_present) {
 					npcsRecord[npcInfo.id] = toFrontendNPC(npcInfo, state.relationships);
 				}
 				updates.npcs = npcsRecord;
 			} else {
-				// No NPCs at current location
-				updates.npcs = {};
+				// We don't clear NPCs when moving to a location with no NPCs
 			}
 
 			// Journal Entries — always sync from backend
@@ -292,6 +292,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 				content: j.content,
 				tags: [],
 			}));
+
+			// Dialogue History — load from backend ONLY if current is empty (e.g. freshly loaded)
+			if (get().dialogueHistory.length === 0 && state.dialogue_history) {
+				updates.dialogueHistory = state.dialogue_history as DialogueMessage[];
+			}
 
 			set(updates as GameState);
 		} catch (error) {
@@ -327,6 +332,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 			// Check if it's a command response
 			if (isCommand) {
+				if (result.error && content.startsWith("/move")) {
+					throw new Error(result.npc_dialogue);
+				}
 				const type = result.npc_id === "narrator" ? "narration" : "system";
 				get().addMessage({
 					id: (Date.now() + 1).toString(),
@@ -355,12 +363,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 			await get().refreshState();
 		} catch (error) {
 			console.error("[GameStore] Action error:", error);
-			get().addMessage({
-				id: (Date.now() + 2).toString(),
-				type: "system",
-				content: `Error: ${error instanceof Error ? error.message : "Failed to process action"}`,
-				timestamp: Date.now(),
-			});
+			if (!content.startsWith("/move")) {
+				get().addMessage({
+					id: (Date.now() + 2).toString(),
+					type: "system",
+					content: `Error: ${error instanceof Error ? error.message : "Failed to process action"}`,
+					timestamp: Date.now(),
+				});
+			}
+			throw error;
 		} finally {
 			set({ isProcessing: false });
 		}

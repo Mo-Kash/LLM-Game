@@ -66,6 +66,14 @@ export interface GameStateResponse {
 		content: string;
 		timestamp: number;
 	}>;
+	dialogue_history?: Array<{
+		id: string;
+		type: string;
+		speaker?: string;
+		content: string;
+		timestamp: number;
+		trustChange?: number;
+	}>;
 }
 
 export interface ActionResponse {
@@ -77,6 +85,7 @@ export interface ActionResponse {
 	validation_errors: string[];
 	elapsed_ms: number;
 	events: Array<{ type: string; payload: Record<string, unknown> }>;
+	error?: boolean;
 }
 
 export interface NPCListResponse {

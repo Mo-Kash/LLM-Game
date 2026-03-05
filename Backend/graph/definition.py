@@ -204,25 +204,7 @@ def make_node_event_commit(
             store.append(event)
             world = apply_event(world, event)
 
-        # Auto-create journal entry if the LLM didn't propose one
-        has_journal = any(
-            e.event_type == EventType.JOURNAL_ENTRY_CREATED
-            for e in state["valid_events"]
-        )
-        if not has_journal:
-            output_obj: Optional[LLMOutput] = state.get("parsed_output")
-            journal_content = (
-                output_obj.memory_summary
-                if output_obj and output_obj.memory_summary
-                else f"Spoke with an NPC: {state['player_input'][:80]}"
-            )
-            journal_evt = Event(
-                turn=turn,
-                event_type=EventType.JOURNAL_ENTRY_CREATED,
-                payload={"content": journal_content},
-            )
-            store.append(journal_evt)
-            world = apply_event(world, journal_evt)
+        # We completely disabled the fallback journal entry log so that the LLM is solely responsible.
 
         world.turn = turn
 

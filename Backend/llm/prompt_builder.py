@@ -39,6 +39,7 @@ HARD RULES:
 - Do NOT contradict canonical facts listed below.
 - Do NOT override canonical entity fields (names, ids, descriptions).
 - If you are uncertain, have the NPC express uncertainty in-character.
+- You MUST heavily tailor the NPC's response and attitude based on the PLAYER IDENTITY (Age, Gender, Occupation). Respond differently to a noble vs a thug.
 - Output ONLY the JSON object. No commentary.
 """
 
@@ -87,8 +88,11 @@ def build_prompt(
     location = world.locations.get(loc_id)
     npc = world.npcs.get(active_npc_id)
 
-    if not location or not npc:
-        raise ValueError(f"Invalid loc={loc_id} or npc={active_npc_id}")
+    if not location:
+        raise ValueError(f"Invalid loc={loc_id}")
+
+    if not npc and active_npc_id != "narrator":
+        raise ValueError(f"Invalid npc={active_npc_id}")
 
     # NPCs in current location
     npcs_present = [
@@ -109,8 +113,18 @@ def build_prompt(
         if oid in world.objects
     ]
 
-    # Trust
-    trust = world.relationships.get(active_npc_id, {}).get("player", 0)
+    if active_npc_id == "narrator":
+        npc_name = "Narrator"
+        npc_id = "narrator"
+        npc_personality = "Omniscient narrator"
+        npc_knowledge = "Everything"
+        trust = 0
+    else:
+        npc_name = npc.name
+        npc_id = npc.id
+        npc_personality = npc.personality
+        npc_knowledge = "; ".join(npc.knowledge) or "general"
+        trust = world.relationships.get(active_npc_id, {}).get("player", 0)
 
     # Memories text
     if memories:

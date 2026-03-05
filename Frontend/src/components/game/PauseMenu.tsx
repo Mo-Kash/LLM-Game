@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores/gameStore";
 import { apiClient } from "@/services/api";
+import { toast } from "sonner";
 
 export function PauseMenu() {
 	const navigate = useNavigate();
@@ -36,8 +37,15 @@ export function PauseMenu() {
 		{
 			label: "SAVE GAME",
 			action: async () => {
-				await useGameStore.getState().saveGame();
-				setHasSaves(true);
+				const success = await useGameStore.getState().saveGame();
+				if (success) {
+					toast.success("Game Saved", {
+						description: "Session state persisted successfully.",
+					});
+					setHasSaves(true);
+				} else {
+					toast.error("Save Failed");
+				}
 				closeModal();
 			},
 		},

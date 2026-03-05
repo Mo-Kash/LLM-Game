@@ -52,6 +52,7 @@ class GameSession:
         "data_dir",
         "_lock",
         "ws_connections",
+        "dialogue_history",
     )
 
     def __init__(
@@ -78,6 +79,7 @@ class GameSession:
         self.data_dir = data_dir
         self._lock = asyncio.Lock()
         self.ws_connections: Set[Any] = set()
+        self.dialogue_history: list = []
 
     def close(self):
         """Persist and release resources."""
@@ -306,7 +308,16 @@ class SessionManager:
             npc_id = list(world.npcs.keys())[0]  # Fallback
             # Maybe store active NPC in world flags or snapshot?
 
-            return GameSession(
+            # Load dialogue_history
+            dh_path = data_dir / "dialogue.json"
+            dh = []
+            if dh_path.exists():
+                try:
+                    dh = json.loads(dh_path.read_text())
+                except Exception:
+                    pass
+
+            sess = GameSession(
                 session_id=session_id,
                 world=world,
                 graph=graph,
@@ -317,6 +328,8 @@ class SessionManager:
                 active_npc_id=npc_id,
                 data_dir=data_dir,
             )
+            sess.dialogue_history = dh
+            return sess
 
         try:
             session = await loop.run_in_executor(None, _load)
@@ -348,6 +361,8 @@ class SessionManager:
         def _save():
             session.faiss_mem.save()
             save_snapshot(session.world, session.data_dir / "snapshot.json", 0)
+            with open(session.data_dir / "dialogue.json", "w") as f:
+                json.dump(session.dialogue_history, f)
 
         await loop.run_in_executor(None, _save)
         return True
@@ -480,6 +495,7 @@ class SessionManager:
                 return {
                     "output": f"Cannot move to {new_loc_id} from here.",
                     "command": "/move",
+                    "error": True,
                 }
 
             # Create move event and apply it
@@ -494,18 +510,7 @@ class SessionManager:
             session.store.append(move_evt)
             session.world = apply_event(world, move_evt)
 
-            # Add journal entry for the move
-            from schemas.events import Event as _Evt, EventType as _ET
-
-            journal_evt = _Evt(
-                turn=session.world.turn,
-                event_type=_ET.JOURNAL_ENTRY_CREATED,
-                payload={
-                    "content": f"Traveled from {loc.name} to {session.world.locations[new_loc_id].name}."
-                },
-            )
-            session.store.append(journal_evt)
-            session.world = apply_event(session.world, journal_evt)
+            # Removed manual journal entry logic to allow LLM to handle it
 
             # Auto-switch NPC to someone in the new location if current is gone
             new_npcs = [

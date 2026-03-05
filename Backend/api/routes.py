@@ -220,6 +220,7 @@ async def get_game_state(session_id: str):
             {"id": e.id, "turn": e.turn, "content": e.content, "timestamp": e.timestamp}
             for e in session.world.journal
         ],
+        dialogue_history=session.dialogue_history,
     )
 
 
@@ -239,11 +240,33 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
     # Handle slash commands locally
     if content.startswith("/"):
         cmd_result = sm.handle_command(session, content)
+
+        # Save command to server-side dialogue history
+        session.dialogue_history.append(
+            {
+                "id": str(int(time.time() * 1000)),
+                "type": "player",
+                "content": content,
+                "timestamp": time.time() * 1000,
+            }
+        )
+        is_narrator = cmd_result.get("npc_id", session.active_npc_id) == "narrator"
+        session.dialogue_history.append(
+            {
+                "id": str(int(time.time() * 1000) + 1),
+                "type": "narration" if is_narrator else "system",
+                "speaker": cmd_result.get("npc_name", "System"),
+                "content": cmd_result["output"],
+                "timestamp": time.time() * 1000,
+            }
+        )
+
         return ActionResponse(
             npc_dialogue=cmd_result["output"],
             npc_id=cmd_result.get("npc_id", session.active_npc_id),
             npc_name=cmd_result.get("npc_name", "System"),
             turn=session.world.turn,
+            error=cmd_result.get("error", False),
         )
 
     # Process through LangGraph pipeline
@@ -255,6 +278,27 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
 
     npc_obj = session.world.npcs.get(result["npc_id"])
     npc_name = npc_obj.name if npc_obj else result["npc_id"]
+
+    # Save standard action to server-side dialogue history
+    session.dialogue_history.append(
+        {
+            "id": str(int(time.time() * 1000)),
+            "type": "player",
+            "content": content,
+            "timestamp": time.time() * 1000,
+        }
+    )
+    is_narrator = result["npc_id"] == "narrator"
+    session.dialogue_history.append(
+        {
+            "id": str(int(time.time() * 1000) + 1),
+            "type": "narration" if is_narrator else "npc",
+            "speaker": npc_name,
+            "content": result["npc_dialogue"],
+            "timestamp": time.time() * 1000,
+            "trustChange": result.get("trust_change"),
+        }
+    )
 
     # Broadcast to WebSocket connections
     ws_msg = WSOutMessage(

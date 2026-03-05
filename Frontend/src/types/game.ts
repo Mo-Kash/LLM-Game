@@ -36,6 +36,7 @@ export interface NPC {
 	allegiances: string[];
 	relationshipTier: RelationshipTier;
 	suspicion: number;
+	locationId?: string;
 }
 
 export interface TrustThreshold {

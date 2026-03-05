@@ -13,8 +13,16 @@ export function PlayerInputDock() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const presentNpcs = Object.values(npcs).filter(
-		(npc) => npc.id !== "narrator",
+		(npc) => npc.id !== "narrator" && npc.locationId === currentLocation,
 	);
+
+	// Ensure targetNpcId defaults to a present NPC if it was null previously
+	const currentTarget =
+		targetNpcId === null
+			? presentNpcs.length > 0
+				? presentNpcs[0].id
+				: "narrator"
+			: targetNpcId;
 
 	const handleSend = useCallback(() => {
 		const curInput = input.trim();
@@ -24,22 +32,15 @@ export function PlayerInputDock() {
 		setHistoryIndex(-1);
 		setInput("");
 
-		// Map addressing target to backend npc_id
 		let npcIdForAction: string | undefined;
-		if (targetNpcId === null) {
-			// General / Nearby — let the backend decide (use active NPC)
-			npcIdForAction = undefined;
-		} else if (targetNpcId === "__self__") {
-			// Self — no NPC target
-			npcIdForAction = undefined;
-		} else if (targetNpcId === "narrator") {
+		if (currentTarget === "narrator") {
 			npcIdForAction = "narrator";
 		} else {
-			npcIdForAction = targetNpcId;
+			npcIdForAction = currentTarget;
 		}
 
 		sendAction(curInput, npcIdForAction);
-	}, [isProcessing, sendAction, targetNpcId, input]);
+	}, [isProcessing, sendAction, currentTarget, input]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -68,10 +69,8 @@ export function PlayerInputDock() {
 	const isCommand = input.startsWith("/");
 	const isDisabled = !sessionId;
 
-	// Addressing options: Self, Narrator, General, + specific NPCs
+	// Addressing options: Narrator, + specific NPCs
 	const addressingOptions: { id: string | null; label: string }[] = [
-		{ id: null, label: "GENERAL / NEARBY" },
-		{ id: "__self__", label: "SELF" },
 		{ id: "narrator", label: "NARRATOR" },
 		...presentNpcs.map((npc) => ({
 			id: npc.id,
@@ -89,11 +88,11 @@ export function PlayerInputDock() {
 					</span>
 					{addressingOptions.map((opt) => (
 						<button
-							key={opt.id ?? "__general__"}
+							key={opt.id ?? "__fallback__"}
 							onClick={() => setTargetNpcId(opt.id)}
 							className={cn(
 								"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
-								targetNpcId === opt.id
+								currentTarget === opt.id
 									? "border-primary bg-primary/10 text-primary"
 									: "border-border text-muted-foreground opacity-60 hover:opacity-100",
 							)}

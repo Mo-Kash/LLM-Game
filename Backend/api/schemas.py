@@ -83,7 +83,8 @@ class GameStateResponse(BaseModel):
     location: Optional[LocationInfo] = None
     player: Optional[PlayerInfo] = None
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
-    journal: List[Dict[str, Any]] = Field(default_factory=list)  # Simplified for UI
+    journal: List[Dict[str, Any]] = Field(default_factory=list)
+    dialogue_history: list = Field(default_factory=list)  # Simplified for UI
 
 
 class ActionResponse(BaseModel):
@@ -95,6 +96,7 @@ class ActionResponse(BaseModel):
     validation_errors: List[str] = Field(default_factory=list)
     elapsed_ms: float = 0.0
     events: List[Dict[str, Any]] = Field(default_factory=list)
+    error: bool = False
 
 
 class NPCListResponse(BaseModel):
@@ -113,6 +115,7 @@ class SaveInfo(BaseModel):
 class CommandResponse(BaseModel):
     output: str
     command: str
+    error: bool = False
 
 
 class ErrorResponse(BaseModel):

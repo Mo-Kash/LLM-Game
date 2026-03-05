@@ -106,6 +106,11 @@ export default function NpcsPage() {
 									{selected.title}
 								</p>
 								<div className="mt-4 flex flex-wrap gap-2">
+									<span className="border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-[9px] tracking-widest text-primary/80">
+										LOC:{" "}
+										{selected.locationId?.replace(/_/g, " ").toUpperCase() ||
+											"UNKNOWN"}
+									</span>
 									{selected.allegiances.map((a) => (
 										<span
 											key={a}

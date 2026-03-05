@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGameStore } from "@/stores/gameStore";
 import { apiClient, type LocationInfo, type NPCInfo } from "@/services/api";
+import { toast } from "sonner";
 
 export default function WorldPage() {
 	const { currentLocation, sessionId, sendAction, refreshState } =
@@ -49,9 +50,15 @@ export default function WorldPage() {
 	};
 
 	const handleTravel = async (locId: string) => {
-		await sendAction(`/move ${locId}`);
-		// Force state refresh to update location, NPCs, etc.
-		await refreshState();
+		try {
+			await sendAction(`/move ${locId}`);
+			// Force state refresh to update location, NPCs, etc.
+			await refreshState();
+		} catch (error: any) {
+			toast.error("Travel Failed", {
+				description: error.message || "Cannot travel there.",
+			});
+		}
 	};
 
 	if (!sessionId) {
