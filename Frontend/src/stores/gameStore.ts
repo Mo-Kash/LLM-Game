@@ -376,22 +376,45 @@ export const useGameStore = create<GameState>((set, get) => ({
 				});
 			} else {
 				// NPC response
-				const type = result.npc_id === "narrator" ? "narration" : "npc";
-				get().addMessage({
-					id: (Date.now() + 1).toString(),
-					type: type as MessageType,
-					speaker: result.npc_name,
-					content: result.npc_dialogue,
-					timestamp: Date.now(),
-					trustChange: result.trust_change || undefined,
-				});
+				const {
+					narration,
+					npc_dialogue,
+					npc_id,
+					npc_name,
+					trust_change,
+					turn,
+				} = result;
+
+				// 1. Add Narration if exists
+				if (narration && narration.trim()) {
+					get().addMessage({
+						id: `nar-path-${Date.now()}`,
+						type: "narration",
+						speaker: "Narrator",
+						content: narration.trim(),
+						timestamp: Date.now(),
+					});
+				}
+
+				// 2. Add NPC Dialogue if exists
+				if (npc_dialogue && npc_dialogue.trim()) {
+					const type = npc_id === "narrator" ? "narration" : "npc";
+					get().addMessage({
+						id: `npc-path-${Date.now() + 1}`,
+						type: type as MessageType,
+						speaker: npc_name,
+						content: npc_dialogue.trim(),
+						timestamp: Date.now() + 1,
+						trustChange: trust_change || undefined,
+					});
+				}
+
+				// Update turn
+				set({ turn: turn });
+
+				// Refresh full state (location, NPCs, journal, inventory may have changed)
+				await get().refreshState();
 			}
-
-			// Update turn
-			set({ turn: result.turn });
-
-			// Refresh full state (location, NPCs, journal, inventory may have changed)
-			await get().refreshState();
 		} catch (error) {
 			console.error("[GameStore] Action error:", error);
 			if (!content.startsWith("/move")) {

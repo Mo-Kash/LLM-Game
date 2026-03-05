@@ -226,7 +226,7 @@ class SessionManager:
         return session
 
     async def list_sessions(self) -> List[Dict[str, Any]]:
-        """List all sessions saved on disk."""
+        """List all sessions/saves saved on disk."""
         sessions_dir = config.DATA_DIR / "sessions"
         if not sessions_dir.exists():
             return []
@@ -236,34 +236,43 @@ class SessionManager:
             if not s_dir.is_dir():
                 continue
 
-            # Try to get metadata from snapshot
-            snapshot_path = s_dir / "snapshot.json"
-            if snapshot_path.exists():
-                try:
-                    data = json.loads(snapshot_path.read_text())
-                    world = data["world_state"]
-                    results.append(
-                        {
-                            "session_id": s_dir.name,
-                            "player_name": world["player"]["name"],
-                            "location_name": world["locations"][
-                                world["player"]["current_location_id"]
-                            ]["name"],
-                            "turn": world["turn"],
-                            "created_at": s_dir.stat().st_ctime,
-                        }
-                    )
-                except Exception:
-                    continue
+            for save_type in ["manual", "auto"]:
+                fname = (
+                    "snapshot.json" if save_type == "manual" else "snapshot_auto.json"
+                )
+                snapshot_path = s_dir / fname
+                if snapshot_path.exists():
+                    try:
+                        data = json.loads(snapshot_path.read_text())
+                        world = data["world_state"]
+                        results.append(
+                            {
+                                "session_id": f"{s_dir.name}:{save_type}",
+                                "player_name": world["player"]["name"],
+                                "location_name": world["locations"][
+                                    world["player"]["current_location_id"]
+                                ]["name"],
+                                "turn": world["turn"],
+                                "created_at": snapshot_path.stat().st_mtime,
+                                "is_auto": save_type == "auto",
+                            }
+                        )
+                    except Exception:
+                        continue
         return sorted(results, key=lambda x: x["created_at"], reverse=True)
 
     async def load_session(self, session_id: str) -> Optional[GameSession]:
-        """Load a session from disk if it exists."""
-        if session_id in self._sessions:
-            return self._sessions[session_id]
+        """Load a session/save from disk if it exists."""
+        save_type = "manual"
+        original_id = session_id
+        if ":" in session_id:
+            original_id, save_type = session_id.split(":", 1)
+
+        if original_id in self._sessions:
+            self._sessions.pop(original_id).close()
 
         await self._ensure_init()
-        data_dir = config.DATA_DIR / "sessions" / session_id
+        data_dir = config.DATA_DIR / "sessions" / original_id
         if not data_dir.exists():
             return None
 
@@ -271,7 +280,14 @@ class SessionManager:
         db_path = data_dir / "events.db"
         faiss_index_path = data_dir / "faiss.index"
         faiss_meta_path = data_dir / "faiss_meta.json"
-        snapshot_path = data_dir / "snapshot.json"
+
+        snapshot_fname = (
+            "snapshot.json" if save_type == "manual" else "snapshot_auto.json"
+        )
+        snapshot_path = data_dir / snapshot_fname
+
+        dh_fname = "dialogue.json" if save_type == "manual" else "dialogue_auto.json"
+        dh_path = data_dir / dh_fname
 
         loop = asyncio.get_event_loop()
 
@@ -280,11 +296,8 @@ class SessionManager:
             snap = load_snapshot(snapshot_path)
             if snap:
                 world, last_id = snap
-                # Replay any events since snapshot?
-                # For now just trust the snapshot or replay all if snap missing
             else:
                 world = self._seed.model_copy(deep=True)
-                # Replay all events from DB
                 events = store.get_all()
                 world = rebuild_state(world, events)
 
@@ -292,8 +305,6 @@ class SessionManager:
                 faiss_index_path, faiss_meta_path, config.EMBEDDING_DIM
             )
             short_term = ShortTermMemory(config.MAX_SHORT_TERM_TURNS)
-            # Hydrate short term memory from recent NPC_SPOKE events?
-            # For now simplified.
 
             graph, commit_node = build_graph(
                 store,
@@ -309,7 +320,6 @@ class SessionManager:
             # Maybe store active NPC in world flags or snapshot?
 
             # Load dialogue_history
-            dh_path = data_dir / "dialogue.json"
             dh = []
             if dh_path.exists():
                 try:
@@ -318,7 +328,7 @@ class SessionManager:
                     pass
 
             sess = GameSession(
-                session_id=session_id,
+                session_id=original_id,
                 world=world,
                 graph=graph,
                 commit_node=commit_node,
@@ -333,7 +343,7 @@ class SessionManager:
 
         try:
             session = await loop.run_in_executor(None, _load)
-            self._sessions[session_id] = session
+            self._sessions[original_id] = session
             return session
         except Exception as e:
             log.error("Failed to load session %s: %s", session_id, e)
@@ -350,7 +360,7 @@ class SessionManager:
         log.info("Session destroyed: %s", session_id)
         return True
 
-    async def save_session(self, session_id: str):
+    async def save_session(self, session_id: str, is_auto: bool = False):
         """Force save session state to disk."""
         session = self.get_session(session_id)
         if not session:
@@ -360,8 +370,12 @@ class SessionManager:
 
         def _save():
             session.faiss_mem.save()
-            save_snapshot(session.world, session.data_dir / "snapshot.json", 0)
-            with open(session.data_dir / "dialogue.json", "w") as f:
+
+            snap_fname = "snapshot_auto.json" if is_auto else "snapshot.json"
+            save_snapshot(session.world, session.data_dir / snap_fname, 0)
+
+            dh_fname = "dialogue_auto.json" if is_auto else "dialogue.json"
+            with open(session.data_dir / dh_fname, "w") as f:
                 json.dump(session.dialogue_history, f)
 
         await loop.run_in_executor(None, _save)
@@ -385,6 +399,7 @@ class SessionManager:
                 "parsed_output": None,
                 "valid_events": [],
                 "validation_errors": [],
+                "narration": "",
                 "npc_dialogue": "",
                 "turn_errors": [],
                 "elapsed_ms": 0.0,
@@ -423,6 +438,7 @@ class SessionManager:
 
             return {
                 "npc_dialogue": result.get("npc_dialogue", ""),
+                "narration": result.get("narration", ""),
                 "npc_id": speaker_id,
                 "npc_name": npc_name,
                 "turn": session.world.turn,
@@ -492,8 +508,10 @@ class SessionManager:
                     "command": "/move",
                 }
             if new_loc_id not in loc.connected_to:
+                target_loc = world.locations.get(new_loc_id)
+                target_name = target_loc.name if target_loc else new_loc_id
                 return {
-                    "output": f"Cannot move to {new_loc_id} from here.",
+                    "output": f"Cannot move to {target_name} from here.",
                     "command": "/move",
                     "error": True,
                 }

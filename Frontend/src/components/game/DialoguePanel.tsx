@@ -30,7 +30,7 @@ function MessageBubble({ msg }: { msg: DialogueMessage }) {
 				</span>
 			)}
 			<p className="text-sm leading-relaxed">{msg.content}</p>
-			{msg.trustChange && (
+			{msg.trustChange !== undefined && msg.trustChange !== 0 ? (
 				<span
 					className={cn(
 						"mt-1 inline-block font-mono text-[10px]",
@@ -41,7 +41,7 @@ function MessageBubble({ msg }: { msg: DialogueMessage }) {
 					{msg.trustChange > 0 ? "+" : ""}
 					{msg.trustChange}
 				</span>
-			)}
+			) : null}
 		</motion.div>
 	);
 }

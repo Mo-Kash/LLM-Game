@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
 import { apiClient, SaveInfo } from "@/services/api";
+import { cn } from "@/lib/utils";
 
 export default function SessionPage() {
 	const navigate = useNavigate();
@@ -63,9 +64,19 @@ export default function SessionPage() {
 							className="group flex flex-col border border-border bg-card/40 p-6 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/40 hover:shadow-primary/5"
 						>
 							<div className="mb-4 flex items-start justify-between">
-								<span className="font-heading text-sm tracking-widest text-primary">
-									{save.player_name.toUpperCase()}
-								</span>
+								<div className="flex flex-col">
+									<span className="font-heading text-sm tracking-widest text-primary">
+										{save.player_name.toUpperCase()}
+									</span>
+									<span
+										className={cn(
+											"mt-1 font-mono text-[8px] uppercase tracking-widest",
+											save.is_auto ? "text-accent/60" : "text-primary/60",
+										)}
+									>
+										{save.is_auto ? "Auto-Save" : "Manual Save"}
+									</span>
+								</div>
 								<span className="font-mono text-[9px] text-muted-foreground/40">
 									TURN {save.turn}
 								</span>

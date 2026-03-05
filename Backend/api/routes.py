@@ -12,6 +12,7 @@ import logging
 import time
 from typing import Optional, List
 
+import config
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query
 
 from api.schemas import (
@@ -130,11 +131,8 @@ def _build_player_info(session) -> PlayerInfo:
 async def get_metadata():
     """Retrieve top-level game metadata from the seed file."""
     try:
-        from pathlib import Path
-
-        seed_path = Path("game/world_seed.json")
-        if seed_path.exists():
-            with open(seed_path, "r", encoding="utf-8") as f:
+        if config.WORLD_SEED_PATH.exists():
+            with open(config.WORLD_SEED_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 meta = data.get("metadata", {})
                 return GameMetadataResponse(
@@ -143,7 +141,7 @@ async def get_metadata():
                     character_options=meta.get("character_options", {}),
                 )
     except Exception as e:
-        log.error("Failed to load metadata: %s", e)
+        log.error("Failed to load metadata from %s: %s", config.WORLD_SEED_PATH, e)
     return GameMetadataResponse()
 
 
@@ -205,7 +203,7 @@ async def load_session(session_id: str):
 async def save_game(session_id: str):
     """Manually save game state."""
     sm = _get_sm()
-    if not await sm.save_session(session_id):
+    if not await sm.save_session(session_id, is_auto=False):
         raise HTTPException(404, "Session not found")
     return {"status": "saved"}
 
@@ -266,25 +264,28 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
     if content.startswith("/"):
         cmd_result = sm.handle_command(session, content)
 
-        # Save command to server-side dialogue history
-        session.dialogue_history.append(
-            {
-                "id": str(int(time.time() * 1000)),
-                "type": "player",
-                "content": content,
-                "timestamp": time.time() * 1000,
-            }
-        )
-        is_narrator = cmd_result.get("npc_id", session.active_npc_id) == "narrator"
-        session.dialogue_history.append(
-            {
-                "id": str(int(time.time() * 1000) + 1),
-                "type": "narration" if is_narrator else "system",
-                "speaker": cmd_result.get("npc_name", "System"),
-                "content": cmd_result["output"],
-                "timestamp": time.time() * 1000,
-            }
-        )
+        if not cmd_result.get("error"):
+            # Save command to server-side dialogue history
+            session.dialogue_history.append(
+                {
+                    "id": str(int(time.time() * 1000)),
+                    "type": "player",
+                    "content": content,
+                    "timestamp": time.time() * 1000,
+                }
+            )
+            is_narrator = cmd_result.get("npc_id", session.active_npc_id) == "narrator"
+            session.dialogue_history.append(
+                {
+                    "id": str(int(time.time() * 1000) + 1),
+                    "type": "narration" if is_narrator else "system",
+                    "speaker": cmd_result.get("npc_name", "System"),
+                    "content": cmd_result["output"],
+                    "timestamp": time.time() * 1000,
+                }
+            )
+
+        await sm.save_session(session_id, is_auto=True)
 
         return ActionResponse(
             npc_dialogue=cmd_result["output"],
@@ -303,6 +304,8 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
 
     npc_obj = session.world.npcs.get(result["npc_id"])
     npc_name = npc_obj.name if npc_obj else result["npc_id"]
+    narration_text = result.get("narration", "").strip()
+    npc_dialogue_text = result["npc_dialogue"].strip()
 
     # Save standard action to server-side dialogue history
     session.dialogue_history.append(
@@ -313,23 +316,37 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
             "timestamp": time.time() * 1000,
         }
     )
-    is_narrator = result["npc_id"] == "narrator"
-    session.dialogue_history.append(
-        {
-            "id": str(int(time.time() * 1000) + 1),
-            "type": "narration" if is_narrator else "npc",
-            "speaker": npc_name,
-            "content": result["npc_dialogue"],
-            "timestamp": time.time() * 1000,
-            "trustChange": result.get("trust_change"),
-        }
-    )
+
+    if narration_text:
+        session.dialogue_history.append(
+            {
+                "id": str(int(time.time() * 1000) + 1),
+                "type": "narration",
+                "speaker": "Narrator",
+                "content": narration_text,
+                "timestamp": time.time() * 1000,
+            }
+        )
+
+    if npc_dialogue_text:
+        is_narrator = result["npc_id"] == "narrator"
+        session.dialogue_history.append(
+            {
+                "id": str(int(time.time() * 1000) + 2),
+                "type": "narration" if is_narrator else "npc",
+                "speaker": npc_name,
+                "content": npc_dialogue_text,
+                "timestamp": time.time() * 1000 + 1,
+                "trustChange": result.get("trust_change"),
+            }
+        )
 
     # Broadcast to WebSocket connections
     ws_msg = WSOutMessage(
         type="npc_response",
         payload={
-            "npc_dialogue": result["npc_dialogue"],
+            "npc_dialogue": npc_dialogue_text,
+            "narration": narration_text,
             "npc_id": result["npc_id"],
             "npc_name": npc_name,
             "turn": result["turn"],
@@ -340,8 +357,11 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
     )
     await _broadcast_to_session(session, ws_msg)
 
+    await sm.save_session(session_id, is_auto=True)
+
     return ActionResponse(
-        npc_dialogue=result["npc_dialogue"],
+        npc_dialogue=npc_dialogue_text,
+        narration=narration_text,
         npc_id=result["npc_id"],
         npc_name=npc_name,
         turn=result["turn"],
@@ -589,7 +609,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         response_msg = WSOutMessage(
                             type="npc_response",
                             payload={
-                                "npc_dialogue": result["npc_dialogue"],
+                                "npc_dialogue": result.get("npc_dialogue", "").strip(),
+                                "narration": result.get("narration", "").strip(),
                                 "npc_id": result["npc_id"],
                                 "npc_name": npc_name,
                                 "turn": result["turn"],
@@ -601,6 +622,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             timestamp=time.time(),
                         )
                         await _broadcast_to_session(session, response_msg)
+                        await sm.save_session(session_id, is_auto=True)
                     except Exception as e:
                         log.error("WS action error: %s", e, exc_info=True)
                         await websocket.send_text(

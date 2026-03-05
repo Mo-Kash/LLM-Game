@@ -16,13 +16,8 @@ export function PlayerInputDock() {
 		(npc) => npc.id !== "narrator" && npc.locationId === currentLocation,
 	);
 
-	// Ensure targetNpcId defaults to a present NPC if it was null previously
-	const currentTarget =
-		targetNpcId === null
-			? presentNpcs.length > 0
-				? presentNpcs[0].id
-				: "narrator"
-			: targetNpcId;
+	// Ensure targetNpcId defaults to narrator
+	const currentTarget = targetNpcId === null ? "narrator" : targetNpcId;
 
 	const handleSend = useCallback(() => {
 		const curInput = input.trim();

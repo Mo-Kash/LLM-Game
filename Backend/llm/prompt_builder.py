@@ -17,11 +17,17 @@ OUTPUT SCHEMA (strict):
   "world_updates": [
     {{"type": "<EventType>", "payload": {{...}}}}
   ],
-  "memory_summary": "<one sentence summarising what just happened>",
+  "memory_summary": "<one short sentence summarising what just happened>",
   "new_entities": [],
   "rule_flags": [],
-  "npc_response": "<immersive in-character dialogue — this is what the player sees>"
+  "narration": "<Physical actions, setting descriptions, and character observations. NO character speech here.>",
+  "npc_response": "<The actual spoken words from the NPC. NO descriptive text or narration here. Leave empty if they don't speak.>"
 }}
+
+CRITICAL: NEVER mix narration and dialogue. 
+- Narration: "He sighs and looks at the floor."
+- Dialogue: "I suppose I can help you."
+- BAD: "He sighs and says, 'I suppose I can help you.'" (This belongs in two fields)
 
 ALLOWED EventTypes and their payload fields:
   RELATIONSHIP_CHANGED  → {{"npc_id":"...", "target_id":"player", "delta":<int -10..10>}}
@@ -35,7 +41,7 @@ ALLOWED EventTypes and their payload fields:
   NPC_SPOKE             → {{}}
 
 HARD RULES:
-- new_entities MUST always be an empty list []. Never invent entities.
+- new_entities MUST always []. Never invent entities.
 - Do NOT contradict canonical facts listed below.
 - Do NOT override canonical entity fields (names, ids, descriptions).
 - If you are uncertain, have the NPC express uncertainty in-character.
@@ -138,10 +144,10 @@ def build_prompt(
         npcs_present=", ".join(npcs_present) or "none",
         objects_here=", ".join(objects_here) or "none",
         player_inventory=", ".join(inventory) or "empty",
-        npc_name=npc.name,
-        npc_id=npc.id,
-        npc_personality=npc.personality,
-        npc_knowledge="; ".join(npc.knowledge) or "general",
+        npc_name=npc_name,
+        npc_id=npc_id,
+        npc_personality=npc_personality,
+        npc_knowledge=npc_knowledge,
         trust=trust,
         world_rules="\n  ".join(world.rules) or "none",
     )
@@ -158,7 +164,7 @@ def build_prompt(
     query_section = QUERY_BLOCK.format(
         turn=world.turn + 1,
         player_input=player_input,
-        npc_name=npc.name,
+        npc_name=npc_name,
     )
 
     prompt = (

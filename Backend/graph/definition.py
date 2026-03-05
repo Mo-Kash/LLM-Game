@@ -47,6 +47,7 @@ class TurnState(TypedDict):
     valid_events: List[Event]
     validation_errors: List[str]
     # Output
+    narration: str
     npc_dialogue: str
     turn_errors: List[str]
     elapsed_ms: float
@@ -142,10 +143,12 @@ def node_json_parsing(state: TurnState) -> TurnState:
             output = LLMOutput(**parsed_dict)
             state["parsed_output"] = output
             state["npc_dialogue"] = output.npc_response
+            state["narration"] = output.narration
         except Exception as exc:
             log.warning("LLMOutput schema validation failed: %s", exc)
             state["parsed_output"] = None
             state["npc_dialogue"] = parsed_dict.get("npc_response", raw.strip() or "…")
+            state["narration"] = parsed_dict.get("narration", "")
             state["turn_errors"] = state.get("turn_errors", []) + [
                 f"Schema error: {exc}"
             ]

@@ -73,11 +73,13 @@ export interface GameStateResponse {
 		content: string;
 		timestamp: number;
 		trustChange?: number;
+		narration?: string;
 	}>;
 }
 
 export interface ActionResponse {
 	npc_dialogue: string;
+	narration: string;
 	npc_id: string;
 	npc_name: string;
 	turn: number;
@@ -106,6 +108,7 @@ export interface SaveInfo {
 	location_name: string;
 	turn: number;
 	created_at: number;
+	is_auto?: boolean;
 }
 
 export interface GameMetadataResponse {

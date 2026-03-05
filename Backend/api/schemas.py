@@ -89,6 +89,7 @@ class GameStateResponse(BaseModel):
 
 class ActionResponse(BaseModel):
     npc_dialogue: str
+    narration: str = ""
     npc_id: str
     npc_name: str
     turn: int

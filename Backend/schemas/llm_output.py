@@ -19,5 +19,6 @@ class LLMOutput(BaseModel):
         default_factory=list
     )  # must be empty / guarded
     rule_flags: List[str] = Field(default_factory=list)
-    npc_response: str  # streamed to client
+    narration: str = ""  # physical actions, setting descriptions, and observations
+    npc_response: str = ""  # streamed to client
     speaker_id: Optional[str] = None  # who is responding
