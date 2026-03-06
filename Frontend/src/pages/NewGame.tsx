@@ -5,30 +5,6 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useGameStore } from "@/stores/gameStore";
 import { cn } from "@/lib/utils";
 
-const GENDER_OPTIONS = ["Male", "Female", "Non-binary", "Other"];
-const OCCUPATION_OPTIONS = [
-	{
-		id: "detective",
-		name: "Detective",
-		desc: "A keen eye for detail and a mind for mystery.",
-	},
-	{
-		id: "scholar",
-		name: "Scholar",
-		desc: "Knowledge is your greatest weapon and shield.",
-	},
-	{
-		id: "merchant",
-		name: "Merchant",
-		desc: "You know the value of everything and the price of nothing.",
-	},
-	{
-		id: "wanderer",
-		name: "Wanderer",
-		desc: "The road is your home, and secrets are your currency.",
-	},
-];
-
 export default function NewGame() {
 	const navigate = useNavigate();
 	const { setActiveSession } = useSessionStore();
@@ -40,9 +16,10 @@ export default function NewGame() {
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const activeGenders = metadata?.character_options?.genders || GENDER_OPTIONS;
-	const activeOccupations =
-		metadata?.character_options?.occupations || OCCUPATION_OPTIONS;
+	const activeGenders = metadata?.character_options?.genders || [];
+	const activeOccupations = metadata?.character_options?.occupations || [];
+
+	const isLoadingMetadata = !metadata;
 
 	const isFormValid =
 		name.trim() !== "" &&
@@ -88,6 +65,19 @@ export default function NewGame() {
 			setIsCreating(false);
 		}
 	};
+
+	if (isLoadingMetadata) {
+		return (
+			<div className="flex h-screen w-screen items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-4 text-center">
+					<div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+					<p className="font-mono text-xs tracking-widest text-primary">
+						RETRIVEING METADATA...
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="h-screen w-screen overflow-y-auto bg-background">

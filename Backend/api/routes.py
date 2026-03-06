@@ -260,41 +260,6 @@ async def submit_action(session_id: str, req: PlayerActionRequest):
 
     content = req.content.strip()
 
-    # Handle slash commands locally
-    if content.startswith("/"):
-        cmd_result = sm.handle_command(session, content)
-
-        if not cmd_result.get("error"):
-            # Save command to server-side dialogue history
-            session.dialogue_history.append(
-                {
-                    "id": str(int(time.time() * 1000)),
-                    "type": "player",
-                    "content": content,
-                    "timestamp": time.time() * 1000,
-                }
-            )
-            is_narrator = cmd_result.get("npc_id", session.active_npc_id) == "narrator"
-            session.dialogue_history.append(
-                {
-                    "id": str(int(time.time() * 1000) + 1),
-                    "type": "narration" if is_narrator else "system",
-                    "speaker": cmd_result.get("npc_name", "System"),
-                    "content": cmd_result["output"],
-                    "timestamp": time.time() * 1000,
-                }
-            )
-
-        await sm.save_session(session_id, is_auto=True)
-
-        return ActionResponse(
-            npc_dialogue=cmd_result["output"],
-            npc_id=cmd_result.get("npc_id", session.active_npc_id),
-            npc_name=cmd_result.get("npc_name", "System"),
-            turn=session.world.turn,
-            error=cmd_result.get("error", False),
-        )
-
     # Process through LangGraph pipeline
     try:
         result = await sm.process_action(session, content, req.npc_id)
@@ -609,16 +574,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 if not content:
                     continue
 
-                # Handle commands
-                if content.startswith("/"):
-                    cmd_result = sm.handle_command(session, content)
-                    await websocket.send_text(
-                        WSOutMessage(
-                            type="command_response",
-                            payload=cmd_result,
-                            timestamp=time.time(),
-                        ).model_dump_json()
-                    )
                 else:
                     # Process action
                     try:
@@ -652,18 +607,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                                 timestamp=time.time(),
                             ).model_dump_json()
                         )
-
-            elif msg_type == "command":
-                content = payload.get("content", "").strip()
-                if content:
-                    cmd_result = sm.handle_command(session, content)
-                    await websocket.send_text(
-                        WSOutMessage(
-                            type="command_response",
-                            payload=cmd_result,
-                            timestamp=time.time(),
-                        ).model_dump_json()
-                    )
 
     except WebSocketDisconnect:
         log.info("WS disconnected: session=%s", session_id)
