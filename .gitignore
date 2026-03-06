@@ -23,9 +23,6 @@ MANIFEST
 
 # Virtual Environment
 .venv/
-venv/
-env/
-ENV/
 
 # IDE
 .vscode/
@@ -48,9 +45,7 @@ Thumbs.db
 logs/
 
 # Database files
-*.db
-*.sqlite
-*.sqlite3
+data/
 
 # Node.js (Frontend)
 node_modules/
@@ -77,10 +72,6 @@ build/
 
 # Environment files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Coverage reports
 coverage/
@@ -128,29 +119,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# PyTorch
-*.pth
-*.pt
-
-# ML/AI model files
-models/
-checkpoints/
-*.pkl
-*.pickle
-*.joblib
-
-# Vector store data
-faiss_index/
-embeddings/
-*.index
-faiss_meta.json
-
-# Session data
-sessions/
-
-# API keys and secrets
-secrets/
-.secrets
-api_keys.txt
-config/secrets.json

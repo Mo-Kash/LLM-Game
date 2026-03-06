@@ -11,7 +11,7 @@ export default function NewGame() {
 	const { createSession, metadata } = useGameStore();
 	const [name, setName] = useState("");
 	const [gender, setGender] = useState("");
-	const [age, setAge] = useState<string>("25");
+	const [age, setAge] = useState<string>("");
 	const [occupation, setOccupation] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -134,6 +134,7 @@ export default function NewGame() {
 									min="18"
 									value={age}
 									onChange={(e) => setAge(e.target.value)}
+									placeholder="Enter your age..."
 									disabled={isCreating}
 									className="w-full border-b border-border bg-transparent px-0 py-3 font-body text-lg text-foreground transition-all focus:border-primary focus:outline-none"
 								/>
