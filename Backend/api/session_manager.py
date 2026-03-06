@@ -175,6 +175,7 @@ class SessionManager:
             world.player.gender = gender
             world.player.age = age
             world.player.occupation = occupation
+            world.player.moral_alignment = 50
 
             store.append(Event(turn=0, event_type=EventType.SESSION_START, payload={}))
 

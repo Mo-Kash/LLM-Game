@@ -22,17 +22,9 @@ export default function NewGame() {
 	const isLoadingMetadata = !metadata;
 
 	const isFormValid =
-		name.trim() !== "" &&
-		gender !== "" &&
-		parseInt(age) >= 18 &&
-		occupation !== "";
+		name.trim() !== "" && gender !== "" && age !== "" && occupation !== "";
 
 	const handleStart = async () => {
-		if (!isFormValid) {
-			setError("Please fill out all fields correctly (Age must be 18+).");
-			return;
-		}
-
 		setIsCreating(true);
 		setError(null);
 
@@ -40,7 +32,7 @@ export default function NewGame() {
 			await createSession({
 				name,
 				gender,
-				age: parseInt(age),
+				age: parseInt(age) || 0,
 				occupation,
 			});
 

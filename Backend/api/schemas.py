@@ -12,10 +12,10 @@ from pydantic import BaseModel, Field
 
 
 class CreateSessionRequest(BaseModel):
-    name: str
-    gender: str
-    age: int
-    occupation: str
+    name: str = Field(..., min_length=1)
+    gender: str = Field(..., min_length=1)
+    age: int = Field(..., ge=18)
+    occupation: str = Field(..., min_length=1)
     default_npc_id: str = "gareth_barkeep"
     reset: bool = False
 
@@ -27,6 +27,15 @@ class PlayerActionRequest(BaseModel):
 
 class SwitchNPCRequest(BaseModel):
     npc_id: str
+
+
+class MoveRequest(BaseModel):
+    location_id: str
+
+
+class LinkCluesRequest(BaseModel):
+    id1: str
+    id2: str
 
 
 # ── Responses ─────────────────────────────────────────────────────────────
@@ -41,6 +50,12 @@ class SessionInfo(BaseModel):
     created_at: float
 
 
+class TrustThreshold(BaseModel):
+    value: int
+    label: str
+    unlocked: bool
+
+
 class NPCInfo(BaseModel):
     id: str
     name: str
@@ -49,6 +64,14 @@ class NPCInfo(BaseModel):
     location_id: str
     alive: bool
     trust: int = 0  # relationship to player
+    title: Optional[str] = None
+    max_trust: int = 100
+    trust_thresholds: List[TrustThreshold] = Field(default_factory=list)
+    emotional_state: str = "neutral"
+    emotional_label: str = "Composed"
+    relationship_tier: str = "stranger"
+    suspicion: int = 0
+    trust_percent: float = 50.0
 
 
 class LocationInfo(BaseModel):
@@ -73,6 +96,17 @@ class PlayerInfo(BaseModel):
     current_location_id: str
     inventory: List[ObjectInfo]
     flags: Dict[str, Any]
+    moral_alignment: int = 50
+
+
+class ClueInfo(BaseModel):
+    id: str
+    title: str
+    description: str
+    linked_clues: List[str]
+    npc_id: Optional[str] = None
+    tension: int = 0
+    discovered: bool = False
 
 
 class GameStateResponse(BaseModel):
@@ -84,6 +118,7 @@ class GameStateResponse(BaseModel):
     player: Optional[PlayerInfo] = None
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
     journal: List[Dict[str, Any]] = Field(default_factory=list)
+    clues: List[ClueInfo] = Field(default_factory=list)
     dialogue_history: list = Field(default_factory=list)  # Simplified for UI
 
 
@@ -96,7 +131,8 @@ class ActionResponse(BaseModel):
     trust_change: int = 0
     validation_errors: List[str] = Field(default_factory=list)
     elapsed_ms: float = 0.0
-    events: List[Dict[str, Any]] = Field(default_factory=list)
+    events: List[Dict[str, Any]] = Field(default_factory=dict)
+    npc: Optional[NPCInfo] = None
     error: bool = False
 
 

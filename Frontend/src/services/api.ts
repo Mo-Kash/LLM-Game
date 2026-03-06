@@ -18,6 +18,12 @@ export interface SessionInfo {
 	created_at: number;
 }
 
+export interface TrustThreshold {
+	value: number;
+	label: string;
+	unlocked: boolean;
+}
+
 export interface NPCInfo {
 	id: string;
 	name: string;
@@ -26,6 +32,14 @@ export interface NPCInfo {
 	location_id: string;
 	alive: boolean;
 	trust: number;
+	title?: string;
+	max_trust: number;
+	trust_thresholds: TrustThreshold[];
+	emotional_state: string;
+	emotional_label: string;
+	relationship_tier: string;
+	suspicion: number;
+	trust_percent: number;
 }
 
 export interface ObjectInfo {
@@ -50,6 +64,7 @@ export interface PlayerInfo {
 	current_location_id: string;
 	inventory: ObjectInfo[];
 	flags: Record<string, unknown>;
+	moral_alignment: number;
 }
 
 export interface GameStateResponse {
@@ -65,6 +80,16 @@ export interface GameStateResponse {
 		turn: number;
 		content: string;
 		timestamp: number;
+		tags?: string[];
+	}>;
+	clues: Array<{
+		id: string;
+		title: string;
+		description: string;
+		linked_clues: string[];
+		npc_id?: string;
+		tension: number;
+		discovered: boolean;
 	}>;
 	dialogue_history?: Array<{
 		id: string;
@@ -87,6 +112,7 @@ export interface ActionResponse {
 	validation_errors: string[];
 	elapsed_ms: number;
 	events: Array<{ type: string; payload: Record<string, unknown> }>;
+	npc?: NPCInfo;
 	error?: boolean;
 }
 
@@ -144,18 +170,31 @@ class APIClient {
 		}
 
 		const response = await fetch(url, options);
+		const responseData = await response.json().catch(() => ({}));
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
-			throw new APIError(
-				response.status,
-				(errorData as Record<string, string>).detail ||
-					(errorData as Record<string, string>).error ||
-					response.statusText,
-			);
+			let message = response.statusText;
+
+			if (responseData.detail) {
+				if (Array.isArray(responseData.detail)) {
+					// Handle Pydantic validation errors (FastAPI 422)
+					message = responseData.detail
+						.map((err: { loc: (string | number)[]; msg: string }) => {
+							const field = err.loc ? err.loc[err.loc.length - 1] : "field";
+							return `${field}: ${err.msg}`;
+						})
+						.join(". ");
+				} else {
+					message = String(responseData.detail);
+				}
+			} else if (responseData.error) {
+				message = String(responseData.error);
+			}
+
+			throw new APIError(response.status, message);
 		}
 
-		return response.json() as Promise<T>;
+		return responseData as T;
 	}
 
 	// ── Session ────────────────────────────────────────────
@@ -186,6 +225,26 @@ class APIClient {
 
 	async getGameState(sessionId: string): Promise<GameStateResponse> {
 		return this.request<GameStateResponse>("GET", `/state/${sessionId}`);
+	}
+
+	async movePlayer(
+		sessionId: string,
+		locationId: string,
+	): Promise<GameStateResponse> {
+		return this.request<GameStateResponse>("POST", `/move/${sessionId}`, {
+			location_id: locationId,
+		});
+	}
+
+	async linkClues(
+		sessionId: string,
+		id1: string,
+		id2: string,
+	): Promise<GameStateResponse> {
+		return this.request<GameStateResponse>("POST", `/clue/link/${sessionId}`, {
+			id1,
+			id2,
+		});
 	}
 
 	// ── Actions ────────────────────────────────────────────

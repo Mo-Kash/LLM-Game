@@ -43,6 +43,17 @@ class PlayerState(BaseModel):
     current_location_id: str
     inventory: List[str] = Field(default_factory=list)  # object ids
     flags: Dict[str, Any] = Field(default_factory=dict)
+    moral_alignment: int = 50
+
+
+class Clue(BaseModel):
+    id: str
+    title: str
+    description: str
+    linked_clues: List[str] = Field(default_factory=list)
+    npc_id: Optional[str] = None
+    tension: int = 0
+    discovered: bool = False
 
 
 class JournalEntry(BaseModel):
@@ -61,5 +72,6 @@ class WorldState(BaseModel):
     relationships: Dict[str, Dict[str, int]] = Field(default_factory=dict)
     # relationships[npc_id][entity_id] = trust delta (-100..100)
     journal: List[JournalEntry] = Field(default_factory=list)
+    clues: Dict[str, Clue] = Field(default_factory=dict)
     active_npc_id: str = ""
     turn: int = 0

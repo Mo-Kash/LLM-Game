@@ -3,21 +3,36 @@ import { useGameStore } from "@/stores/gameStore";
 import { cn } from "@/lib/utils";
 import type { NPC } from "@/types/game";
 
-const EMOTION_LABELS: Record<string, { label: string; color: string }> = {
-	neutral: { label: "Composed", color: "text-muted-foreground" },
-	suspicious: { label: "Suspicious", color: "text-destructive" },
-	fearful: { label: "Fearful", color: "text-accent-foreground" },
-	angry: { label: "Hostile", color: "text-destructive" },
-	melancholic: { label: "Melancholic", color: "text-muted-foreground" },
-	guarded: { label: "Guarded", color: "text-muted-foreground" },
-	trusting: { label: "Trusting", color: "text-primary" },
-	desperate: { label: "Desperate", color: "text-destructive" },
-	hostile: { label: "Hostile", color: "text-destructive" },
-	playful: { label: "Playful", color: "text-primary" },
-};
+function NPCSwitcher() {
+	const { npcs, activeNPC, switchNPC } = useGameStore();
+	const npcList = Object.values(npcs);
+
+	if (npcList.length <= 1) return null;
+
+	return (
+		<div className="border-t border-border pt-3">
+			<span className="mb-2 block font-mono text-[10px] tracking-wider text-muted-foreground/60">
+				OTHERS PRESENT
+			</span>
+			<div className="space-y-1">
+				{npcList
+					.filter((n) => n.id !== activeNPC?.id)
+					.map((n) => (
+						<button
+							key={n.id}
+							onClick={() => switchNPC(n.id)}
+							className="block w-full text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary"
+						>
+							→ {n.name}
+						</button>
+					))}
+			</div>
+		</div>
+	);
+}
 
 function TrustMeter({ npc }: { npc: NPC }) {
-	const pct = ((npc.trust + 100) / 200) * 100; // trust range: -100 to 100
+	const pct = npc.trustPercent;
 
 	return (
 		<div className="space-y-1">
@@ -60,34 +75,6 @@ function TrustMeter({ npc }: { npc: NPC }) {
 	);
 }
 
-function NPCSwitcher() {
-	const { npcs, activeNPC, switchNPC } = useGameStore();
-	const npcList = Object.values(npcs);
-
-	if (npcList.length <= 1) return null;
-
-	return (
-		<div className="border-t border-border pt-3">
-			<span className="mb-2 block font-mono text-[10px] tracking-wider text-muted-foreground/60">
-				OTHERS PRESENT
-			</span>
-			<div className="space-y-1">
-				{npcList
-					.filter((n) => n.id !== activeNPC?.id)
-					.map((n) => (
-						<button
-							key={n.id}
-							onClick={() => switchNPC(n.id)}
-							className="block w-full text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary"
-						>
-							→ {n.name}
-						</button>
-					))}
-			</div>
-		</div>
-	);
-}
-
 export function ActiveNPCPanel() {
 	const activeNPC = useGameStore((s) => s.activeNPC);
 
@@ -101,8 +88,13 @@ export function ActiveNPCPanel() {
 		);
 	}
 
-	const emotion =
-		EMOTION_LABELS[activeNPC.emotionalState] ?? EMOTION_LABELS.neutral;
+	const emotionColor =
+		activeNPC.emotionalState === "trusting"
+			? "text-primary"
+			: activeNPC.emotionalState === "hostile" ||
+				  activeNPC.emotionalState === "suspicious"
+				? "text-destructive"
+				: "text-muted-foreground";
 
 	return (
 		<div className="flex h-full flex-col">
@@ -140,8 +132,8 @@ export function ActiveNPCPanel() {
 					<span className="font-mono text-[10px] tracking-wider text-muted-foreground/60">
 						MOOD
 					</span>
-					<span className={cn("font-mono text-xs", emotion.color)}>
-						{emotion.label}
+					<span className={cn("font-mono text-xs", emotionColor)}>
+						{activeNPC.emotionalLabel}
 					</span>
 				</div>
 

@@ -5,6 +5,8 @@ import type {
 	JournalEntry,
 	Clue,
 	MessageType,
+	EmotionalState,
+	RelationshipTier,
 } from "@/types/game";
 import {
 	apiClient,
@@ -58,7 +60,6 @@ interface GameState {
 	// Clues
 	clues: Clue[];
 	addClue: (clue: Clue) => void;
-	linkClues: (id1: string, id2: string) => void;
 
 	// Processing
 	isProcessing: boolean;
@@ -72,6 +73,7 @@ interface GameState {
 
 	// Turn
 	turn: number;
+	moralAlignment: number;
 
 	// ── Backend integration actions ──────────────────────────
 
@@ -88,6 +90,12 @@ interface GameState {
 
 	/** Send player input (dialogue or command) to backend */
 	sendAction: (content: string, targetNpcId?: string) => Promise<void>;
+
+	/** Directly move player to location */
+	movePlayer: (locationId: string) => Promise<void>;
+
+	/** Link two clues logically on the backend */
+	linkClues: (id1: string, id2: string) => Promise<void>;
 
 	/** Switch active NPC via backend */
 	switchNPC: (npcId: string) => Promise<void>;
@@ -109,36 +117,22 @@ interface GameState {
 }
 
 /** Convert backend NPCInfo to frontend NPC type */
-function toFrontendNPC(
-	info: NPCInfo,
-	relationships: Record<string, Record<string, number>> = {},
-): NPC {
-	const trust = info.trust ?? relationships[info.id]?.player ?? 0;
+function toFrontendNPC(info: NPCInfo): NPC {
 	return {
 		id: info.id,
 		name: info.name,
-		title: info.personality.split(".")[0] || undefined,
-		trust,
-		maxTrust: 100,
-		trustThresholds: [
-			{ value: 25, label: "Wary", unlocked: trust >= 25 },
-			{ value: 50, label: "Cautious Trust", unlocked: trust >= 50 },
-			{ value: 75, label: "Confidant", unlocked: trust >= 75 },
-		],
-		emotionalState:
-			trust > 60
-				? "trusting"
-				: trust > 30
-					? "neutral"
-					: trust < -20
-						? "hostile"
-						: "guarded",
+		title: info.title,
+		trust: info.trust,
+		maxTrust: info.max_trust,
+		trustThresholds: info.trust_thresholds,
+		emotionalState: info.emotional_state as EmotionalState,
 		hiddenSecrets: 0,
 		revealedSecrets: 0,
 		allegiances: [],
-		relationshipTier:
-			trust > 60 ? "confidant" : trust > 30 ? "acquaintance" : "stranger",
-		suspicion: Math.max(0, -trust),
+		relationshipTier: info.relationship_tier as RelationshipTier,
+		suspicion: info.suspicion,
+		emotionalLabel: info.emotional_label,
+		trustPercent: info.trust_percent,
 		locationId: info.location_id,
 	};
 }
@@ -209,22 +203,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 	// Clues
 	clues: [],
 	addClue: (clue) => set((s) => ({ clues: [...s.clues, clue] })),
-	linkClues: (id1, id2) =>
-		set((s) => ({
-			clues: s.clues.map((c) => {
-				if (c.id === id1)
-					return {
-						...c,
-						linkedClues: [...c.linkedClues, id2],
-					};
-				if (c.id === id2)
-					return {
-						...c,
-						linkedClues: [...c.linkedClues, id1],
-					};
-				return c;
-			}),
-		})),
 
 	// Processing
 	isProcessing: false,
@@ -238,6 +216,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 	// Turn
 	turn: 0,
+	moralAlignment: 50,
 
 	// ── Backend integration ─────────────────────────────────
 
@@ -290,10 +269,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 			// Active NPC
 			if (state.active_npc) {
-				updates.activeNPC = toFrontendNPC(
-					state.active_npc,
-					state.relationships,
-				);
+				updates.activeNPC = toFrontendNPC(state.active_npc);
 			}
 
 			// Player
@@ -303,13 +279,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 					name: o.name,
 					description: o.description,
 				}));
+				updates.moralAlignment = state.player.moral_alignment;
 			}
 
 			// All NPCs in location — accumulate
 			if (state.location?.npcs_present) {
 				const npcsRecord: Record<string, NPC> = { ...get().npcs };
 				for (const npcInfo of state.location.npcs_present) {
-					npcsRecord[npcInfo.id] = toFrontendNPC(npcInfo, state.relationships);
+					npcsRecord[npcInfo.id] = toFrontendNPC(npcInfo);
 				}
 				updates.npcs = npcsRecord;
 			} else {
@@ -319,15 +296,21 @@ export const useGameStore = create<GameState>((set, get) => ({
 			// Journal Entries — always sync from backend
 			updates.journalEntries = (state.journal || []).map((j) => ({
 				id: j.id,
-				timestamp: j.timestamp * 1000,
+				timestamp: j.timestamp,
 				content: j.content,
-				tags: [],
+				tags: j.tags || [],
 			}));
 
-			// Dialogue History — load from backend ONLY if current is empty (e.g. freshly loaded)
-			if (get().dialogueHistory.length === 0 && state.dialogue_history) {
-				updates.dialogueHistory = state.dialogue_history as DialogueMessage[];
-			}
+			// Clues — always sync from backend
+			updates.clues = (state.clues || []).map((c) => ({
+				id: c.id,
+				title: c.title,
+				description: c.description,
+				linkedClues: c.linked_clues,
+				npcId: c.npc_id,
+				tension: c.tension,
+				discovered: c.discovered,
+			}));
 
 			set(updates as GameState);
 		} catch (error) {
@@ -453,6 +436,30 @@ export const useGameStore = create<GameState>((set, get) => ({
 		}
 	},
 
+	movePlayer: async (locationId: string) => {
+		const { sessionId, refreshState } = get();
+		if (!sessionId) return;
+		try {
+			await apiClient.movePlayer(sessionId, locationId);
+			await refreshState();
+		} catch (error) {
+			console.error("[GameStore] Failed to move player:", error);
+			throw error;
+		}
+	},
+
+	linkClues: async (id1: string, id2: string) => {
+		const { sessionId, refreshState } = get();
+		if (!sessionId) return;
+		try {
+			await apiClient.linkClues(sessionId, id1, id2);
+			await refreshState();
+		} catch (error) {
+			console.error("[GameStore] Failed to link clues:", error);
+			throw error;
+		}
+	},
+
 	switchNPC: async (npcId: string) => {
 		const { sessionId } = get();
 		if (!sessionId) return;
@@ -460,7 +467,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 		try {
 			const result = await apiClient.switchNPC(sessionId, npcId);
 			const npcInfo = result.npc as NPCInfo;
-			const npc = toFrontendNPC(npcInfo, get().relationships);
+			const npc = toFrontendNPC(npcInfo);
 			set({ activeNPC: npc });
 
 			get().addMessage({
@@ -540,7 +547,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 		// NPC switched (from another client)
 		wsService.on("npc_switched", (msg: WSOutMessage) => {
 			const npcInfo = msg.payload as unknown as NPCInfo;
-			const npc = toFrontendNPC(npcInfo, get().relationships);
+			const npc = toFrontendNPC(npcInfo);
 			set({ activeNPC: npc });
 		});
 	},

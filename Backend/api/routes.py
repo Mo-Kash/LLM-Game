@@ -59,8 +59,50 @@ def _get_sm() -> SessionManager:
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
+# ── NPC Presentation logic ───────────────────────────────────────────────────
+
+EMOTION_LABELS = {
+    "neutral": "Composed",
+    "suspicious": "Suspicious",
+    "fearful": "Fearful",
+    "angry": "Hostile",
+    "melancholic": "Melancholic",
+    "guarded": "Guarded",
+    "trusting": "Trusting",
+    "desperate": "Desperate",
+    "hostile": "Hostile",
+    "playful": "Playful",
+}
+
+
 def _build_npc_info(session, npc) -> NPCInfo:
     trust = session.world.relationships.get(npc.id, {}).get("player", 0)
+
+    # Emotional state determination based on trust levels
+    if trust > 60:
+        emotional_state = "trusting"
+    elif trust > 30:
+        emotional_state = "neutral"
+    elif trust < -20:
+        emotional_state = "hostile"
+    else:
+        emotional_state = "guarded"
+
+    # Relationship tier calculations
+    if trust > 60:
+        relationship_tier = "confidant"
+    elif trust > 30:
+        relationship_tier = "acquaintance"
+    else:
+        relationship_tier = "stranger"
+
+    # Trust Thresholds
+    trust_thresholds = [
+        {"value": -50, "label": "Wary", "unlocked": trust >= -50},
+        {"value": 0, "label": "Neutral", "unlocked": trust >= 0},
+        {"value": 50, "label": "Friendly", "unlocked": trust >= 50},
+    ]
+
     return NPCInfo(
         id=npc.id,
         name=npc.name,
@@ -69,6 +111,13 @@ def _build_npc_info(session, npc) -> NPCInfo:
         location_id=npc.location_id,
         alive=npc.alive,
         trust=trust,
+        title=npc.personality.split(".")[0] if npc.personality else None,
+        emotional_state=emotional_state,
+        emotional_label=EMOTION_LABELS.get(emotional_state, "Composed"),
+        relationship_tier=relationship_tier,
+        trust_thresholds=trust_thresholds,
+        suspicion=max(0, -trust),
+        trust_percent=((trust + 100) / 200) * 100,
     )
 
 
@@ -121,6 +170,7 @@ def _build_player_info(session) -> PlayerInfo:
         current_location_id=world.player.current_location_id,
         inventory=inventory,
         flags=world.player.flags,
+        moral_alignment=world.player.moral_alignment,
     )
 
 
@@ -240,8 +290,26 @@ async def get_game_state(session_id: str):
         player=_build_player_info(session),
         relationships=session.world.relationships,
         journal=[
-            {"id": e.id, "turn": e.turn, "content": e.content, "timestamp": e.timestamp}
+            {
+                "id": e.id,
+                "turn": e.turn,
+                "content": e.content,
+                "timestamp": e.timestamp * 1000,
+                "tags": [],
+            }
             for e in session.world.journal
+        ],
+        clues=[
+            ClueInfo(
+                id=c.id,
+                title=c.title,
+                description=c.description,
+                linked_clues=c.linked_clues,
+                npc_id=c.npc_id,
+                tension=c.tension,
+                discovered=c.discovered,
+            )
+            for c in session.world.clues.values()
         ],
         dialogue_history=session.dialogue_history,
     )
@@ -469,6 +537,58 @@ async def list_locations(session_id: str):
 # ── Health Check ──────────────────────────────────────────────────────────
 
 
+@router.post("/move/{session_id}", response_model=GameStateResponse)
+async def move_player(session_id: str, req: MoveRequest):
+    """Directly move the player to a connected location."""
+    sm = _get_sm()
+    session = sm.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    current_loc_id = session.world.player.current_location_id
+    current_loc = session.world.locations.get(current_loc_id)
+
+    if not current_loc or req.location_id not in current_loc.connected_to:
+        raise HTTPException(
+            400, f"Cannot travel to {req.location_id} from {current_loc_id}"
+        )
+
+    # Create and commit move event
+    event = Event(
+        turn=session.world.turn + 1,
+        event_type=EventType.PLAYER_MOVED,
+        payload={"to_location_id": req.location_id},
+    )
+    session.store.append(event)
+    session.world = apply_event(session.world, event)
+    session.world.turn = event.turn
+
+    # Return refreshed status
+    return await get_game_state(session_id)
+
+
+@router.post("/clue/link/{session_id}", response_model=GameStateResponse)
+async def link_clues(session_id: str, req: LinkCluesRequest):
+    """Link two clues logically in the player's mind/journal."""
+    sm = _get_sm()
+    session = sm.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    if req.id1 not in session.world.clues or req.id2 not in session.world.clues:
+        raise HTTPException(400, "One or both clues not found")
+
+    event = Event(
+        turn=session.world.turn,
+        event_type=EventType.CLUE_LINKED,
+        payload={"id1": req.id1, "id2": req.id2},
+    )
+    session.store.append(event)
+    session.world = apply_event(session.world, event)
+
+    return await get_game_state(session_id)
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     sm = _get_sm()
@@ -506,7 +626,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     Incoming messages:
       - {"type": "action", "payload": {"content": "..."}}
-      - {"type": "command", "payload": {"content": "/look"}}
       - {"type": "ping"}
 
     Outgoing messages:

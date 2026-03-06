@@ -102,6 +102,30 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
             )
             s.journal.append(entry)
 
+        elif et == EventType.CLUE_DISCOVERED:
+            clue_id = p.get("clue_id")
+            if clue_id:
+                if clue_id in s.clues:
+                    s.clues[clue_id].discovered = True
+                else:
+                    from schemas.world_state import Clue
+
+                    s.clues[clue_id] = Clue(
+                        id=clue_id,
+                        title=p.get("title", clue_id.replace("_", " ").title()),
+                        description=p.get("description", ""),
+                        discovered=True,
+                    )
+
+        elif et == EventType.CLUE_LINKED:
+            id1 = p.get("id1")
+            id2 = p.get("id2")
+            if id1 in s.clues and id2 in s.clues:
+                if id2 not in s.clues[id1].linked_clues:
+                    s.clues[id1].linked_clues.append(id2)
+                if id1 not in s.clues[id2].linked_clues:
+                    s.clues[id2].linked_clues.append(id1)
+
         else:
             log.warning("Reducer: unhandled event type %s", et)
 

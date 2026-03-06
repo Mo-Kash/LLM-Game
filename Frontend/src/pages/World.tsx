@@ -51,12 +51,12 @@ export default function WorldPage() {
 
 	const handleTravel = async (locId: string) => {
 		try {
-			await sendAction(`/move ${locId}`);
-			// Force state refresh to update location, NPCs, etc.
-			await refreshState();
-		} catch (error: any) {
+			const { movePlayer } = useGameStore.getState();
+			await movePlayer(locId);
+		} catch (error: unknown) {
+			const err = error as Error;
 			toast.error("Travel Failed", {
-				description: error.message || "Cannot travel there.",
+				description: err.message || "Cannot travel there.",
 			});
 		}
 	};

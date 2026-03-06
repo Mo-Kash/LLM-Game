@@ -36,6 +36,8 @@ export interface NPC {
 	allegiances: string[];
 	relationshipTier: RelationshipTier;
 	suspicion: number;
+	emotionalLabel: string;
+	trustPercent: number;
 	locationId?: string;
 }
 
