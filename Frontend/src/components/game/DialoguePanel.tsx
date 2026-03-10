@@ -29,7 +29,9 @@ function MessageBubble({ msg }: { msg: DialogueMessage }) {
 					{msg.speaker}
 				</span>
 			)}
-			<p className="text-sm leading-relaxed">{msg.content}</p>
+			<p className="whitespace-pre-wrap text-sm leading-relaxed">
+				{msg.content}
+			</p>
 			{msg.trustChange !== undefined && msg.trustChange !== 0 ? (
 				<span
 					className={cn(

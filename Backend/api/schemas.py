@@ -171,6 +171,7 @@ class HealthResponse(BaseModel):
 class GameMetadataResponse(BaseModel):
     title: str = "LLM Game"
     description: str = ""
+    initial_narrator_message: str = ""
     character_options: Dict[str, Any] = Field(default_factory=dict)
 
 

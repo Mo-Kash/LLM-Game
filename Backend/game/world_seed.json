@@ -2,6 +2,7 @@
 	"metadata": {
 		"title": "The Obsidian Flask",
 		"description": "A dark fantasy text adventure set in a treacherous world.",
+		"initial_narrator_message": "The heavy door swings shut behind you. The tavern falls silent for a heartbeat, then whispers resume - sharper now, aimed your way.\n\nSomething happened here three nights ago. Someone vanished. Something was left behind.\n\nGareth Ironhead watches from behind the bar. Lira avoids your gaze. The others... they're measuring you.\n\nYou feel it too, don't you? That pull toward the shadows in the corner, the locked door upstairs, the cellar that breathes when no one's listening.\n\nThis isn't one of those games where you follow a script. Every word you speak, every person you trust, every door you open - it all ripples. The world remembers. The people remember. Their trust, their fear, their secrets - they all shift based on you and only you.\n\nWhat happened three nights ago? Why is everyone watching you? What's in the cellar? What choice are you facing? What will you discover?\n\nThere are no right answers here. Only your answers.\n\nWhat do you do?",
 		"character_options": {
 			"genders": ["Male", "Female", "Non-binary", "Other"],
 			"occupations": [

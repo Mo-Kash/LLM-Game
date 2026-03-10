@@ -5,6 +5,13 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+class WorldMetadata(BaseModel):
+    title: str = "LLM Game"
+    description: str = ""
+    initial_narrator_message: str = ""
+    character_options: Dict[str, Any] = Field(default_factory=dict)
+
+
 class Location(BaseModel):
     id: str
     name: str
@@ -64,6 +71,7 @@ class JournalEntry(BaseModel):
 
 
 class WorldState(BaseModel):
+    metadata: WorldMetadata = Field(default_factory=WorldMetadata)
     locations: Dict[str, Location] = Field(default_factory=dict)
     npcs: Dict[str, NPC] = Field(default_factory=dict)
     objects: Dict[str, WorldObject] = Field(default_factory=dict)

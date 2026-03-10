@@ -221,6 +221,22 @@ class SessionManager:
         session = await loop.run_in_executor(None, _create)
         self._sessions[session_id] = session
 
+        # Add initial narrator message if it exists in seed
+        if (
+            self._seed
+            and hasattr(self._seed, "metadata")
+            and self._seed.metadata.initial_narrator_message
+        ):
+            session.dialogue_history.append(
+                {
+                    "id": f"init_{int(time.time() * 1000)}",
+                    "type": "narration",
+                    "speaker": "Narrator",
+                    "content": self._seed.metadata.initial_narrator_message,
+                    "timestamp": time.time() * 1000,
+                }
+            )
+
         # Save initial state so it appears in the list immediately
         await self.save_session(session_id, is_auto=True)
 

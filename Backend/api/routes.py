@@ -193,6 +193,7 @@ async def get_metadata():
                 return GameMetadataResponse(
                     title=meta.get("title", "LLM Game"),
                     description=meta.get("description", ""),
+                    initial_narrator_message=meta.get("initial_narrator_message", ""),
                     character_options=meta.get("character_options", {}),
                 )
     except Exception as e:
