@@ -33,8 +33,13 @@ from api.schemas import (
     HealthResponse,
     WSOutMessage,
     GameMetadataResponse,
+    MoveRequest,
+    LinkCluesRequest,
+    ClueInfo,
 )
 from api.session_manager import SessionManager
+from core.reducer import apply_event
+from schemas.events import Event, EventType
 
 log = logging.getLogger(__name__)
 

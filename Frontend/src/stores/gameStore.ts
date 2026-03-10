@@ -312,6 +312,18 @@ export const useGameStore = create<GameState>((set, get) => ({
 				discovered: c.discovered,
 			}));
 
+			// Dialogue History — sync from backend
+			if (state.dialogue_history) {
+				updates.dialogueHistory = state.dialogue_history.map((m: any) => ({
+					id: m.id,
+					type: m.type as MessageType,
+					speaker: m.speaker,
+					content: m.content,
+					timestamp: m.timestamp,
+					trustChange: m.trustChange,
+				}));
+			}
+
 			set(updates as GameState);
 		} catch (error) {
 			console.error("[GameStore] Failed to refresh state:", error);
@@ -507,7 +519,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 				sessionId: session.session_id,
 				playerName: session.player_name,
 				turn: session.turn,
-				dialogueHistory: [], // Clear history for fresh reload or keep?
 			});
 			await get().refreshState();
 			get().connectWebSocket();
