@@ -4,26 +4,38 @@ import { cn } from "@/lib/utils";
 import type { NPC } from "@/types/game";
 
 function NPCSwitcher() {
-	const { npcs, activeNPC, switchNPC } = useGameStore();
-	const npcList = Object.values(npcs);
+	const { npcs, activeNPC, switchNPC, currentLocation } = useGameStore();
+	const npcList = Object.values(npcs).filter(
+		(n) => n.locationId === currentLocation,
+	);
 
-	if (npcList.length <= 1) return null;
+	if (npcList.length === 0) return null;
 
 	return (
-		<div className="border-t border-border pt-3">
-			<span className="mb-2 block font-mono text-[10px] tracking-wider text-muted-foreground/60">
-				OTHERS PRESENT
+		<div className="border-t border-border pt-4">
+			<span className="mb-3 block font-mono text-[10px] tracking-wider text-muted-foreground/60">
+				{activeNPC ? "OTHERS PRESENT" : "SELECT SOMEONE TO TALK TO"}
 			</span>
-			<div className="space-y-1">
+			<div className="space-y-2">
 				{npcList
 					.filter((n) => n.id !== activeNPC?.id)
 					.map((n) => (
 						<button
 							key={n.id}
 							onClick={() => switchNPC(n.id)}
-							className="block w-full text-left font-mono text-xs text-muted-foreground transition-colors hover:text-primary"
+							className="group flex w-full items-center justify-between border border-border px-3 py-2 text-left transition-all hover:border-primary/50 hover:bg-secondary"
 						>
-							→ {n.name}
+							<div className="flex flex-col">
+								<span className="font-heading text-xs tracking-wider text-foreground group-hover:text-primary">
+									{n.name}
+								</span>
+								<span className="font-mono text-[9px] text-muted-foreground/60">
+									{n.emotionalLabel}
+								</span>
+							</div>
+							<span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary">
+								→
+							</span>
 						</button>
 					))}
 			</div>
@@ -77,79 +89,85 @@ function TrustMeter({ npc }: { npc: NPC }) {
 
 export function ActiveNPCPanel() {
 	const activeNPC = useGameStore((s) => s.activeNPC);
+	const currentLocationName = useGameStore((s) => s.currentLocationName);
 
-	if (!activeNPC) {
-		return (
-			<div className="flex h-full flex-col items-center justify-center">
-				<p className="font-mono text-xs tracking-wider text-muted-foreground/30">
-					NO ONE APPROACHES
+	const innerContent = activeNPC ? (
+		<div className="flex flex-1 flex-col space-y-6 overflow-y-auto px-4 py-4">
+			{/* Portrait placeholder */}
+			<div className="relative mx-auto flex aspect-[3/4] w-full items-center justify-center border-2 border-border bg-secondary/50">
+				<span className="font-heading text-[10px] tracking-[0.3em] text-muted-foreground/20">
+					PORTRAIT
+				</span>
+				<div className="absolute inset-0 border border-primary/5" />
+			</div>
+
+			{/* Name & title */}
+			<div className="text-center">
+				<h3 className="font-heading text-sm tracking-widest text-foreground">
+					{activeNPC.name.toUpperCase()}
+				</h3>
+				{activeNPC.title && (
+					<p className="mt-1 font-mono text-[9px] tracking-wider text-muted-foreground/60">
+						{activeNPC.title.toUpperCase()}
+					</p>
+				)}
+			</div>
+
+			{/* Trust meter */}
+			<TrustMeter npc={activeNPC} />
+
+			{/* Emotional state & relationship */}
+			<div className="space-y-2 border-t border-border pt-4">
+				<div className="flex items-center justify-between">
+					<span className="font-mono text-[10px] tracking-wider text-muted-foreground/60">
+						MOOD
+					</span>
+					<span
+						className={cn(
+							"font-mono text-[10px] uppercase",
+							activeNPC.emotionalState === "trusting"
+								? "text-primary"
+								: activeNPC.emotionalState === "hostile" ||
+									  activeNPC.emotionalState === "suspicious"
+									? "text-destructive"
+									: "text-foreground",
+						)}
+					>
+						{activeNPC.emotionalLabel}
+					</span>
+				</div>
+				<div className="flex items-center justify-between">
+					<span className="font-mono text-[10px] tracking-wider text-muted-foreground/60">
+						STANDING
+					</span>
+					<span className="font-heading text-[10px] tracking-wider text-primary/70">
+						{activeNPC.relationshipTier.toUpperCase()}
+					</span>
+				</div>
+			</div>
+
+			{/* NPC Switcher */}
+			<NPCSwitcher />
+		</div>
+	) : (
+		<div className="flex-1 space-y-6 px-4 py-8">
+			<div className="text-center">
+				<p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/40">
+					NO ACTIVE ENGAGEMENT
 				</p>
 			</div>
-		);
-	}
-
-	const emotionColor =
-		activeNPC.emotionalState === "trusting"
-			? "text-primary"
-			: activeNPC.emotionalState === "hostile" ||
-				  activeNPC.emotionalState === "suspicious"
-				? "text-destructive"
-				: "text-muted-foreground";
+			<NPCSwitcher />
+		</div>
+	);
 
 	return (
 		<div className="flex h-full flex-col">
 			<div className="border-b border-border px-4 py-2">
-				<h2 className="font-heading text-xs tracking-widest text-muted-foreground">
-					PRESENT
+				<h2 className="font-heading text-[10px] tracking-[0.2em] text-muted-foreground/60">
+					LOCATION: {currentLocationName.toUpperCase()}
 				</h2>
 			</div>
-			<div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
-				{/* Portrait placeholder */}
-				<div className="relative mx-auto flex aspect-[3/4] w-full items-center justify-center border-2 border-border bg-secondary/50">
-					<span className="font-heading text-xs tracking-widest text-muted-foreground/20">
-						PORTRAIT
-					</span>
-					<div className="absolute inset-0 border border-primary/10" />
-				</div>
-
-				{/* Name & title */}
-				<div className="text-center">
-					<h3 className="font-heading text-base tracking-wider text-foreground">
-						{activeNPC.name}
-					</h3>
-					{activeNPC.title && (
-						<p className="mt-0.5 font-mono text-[10px] tracking-wider text-muted-foreground/60">
-							{activeNPC.title}
-						</p>
-					)}
-				</div>
-
-				{/* Trust meter */}
-				<TrustMeter npc={activeNPC} />
-
-				{/* Emotional state */}
-				<div className="flex items-center gap-2">
-					<span className="font-mono text-[10px] tracking-wider text-muted-foreground/60">
-						MOOD
-					</span>
-					<span className={cn("font-mono text-xs", emotionColor)}>
-						{activeNPC.emotionalLabel}
-					</span>
-				</div>
-
-				{/* Relationship tier */}
-				<div className="flex items-center gap-2 border-t border-border pt-2">
-					<span className="font-mono text-[10px] tracking-wider text-muted-foreground/60">
-						STANDING
-					</span>
-					<span className="font-heading text-xs capitalize tracking-wider text-primary/70">
-						{activeNPC.relationshipTier}
-					</span>
-				</div>
-
-				{/* NPC Switcher */}
-				<NPCSwitcher />
-			</div>
+			{innerContent}
 		</div>
 	);
 }

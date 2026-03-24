@@ -16,7 +16,6 @@ class CreateSessionRequest(BaseModel):
     gender: str = Field(..., min_length=1)
     age: int = Field(..., ge=18)
     occupation: str = Field(..., min_length=1)
-    default_npc_id: str = "gareth_barkeep"
     reset: bool = False
 
 
@@ -45,7 +44,7 @@ class SessionInfo(BaseModel):
     session_id: str
     player_name: str
     turn: int
-    active_npc_id: str
+    active_npc_id: Optional[str] = None
     current_location_id: str
     created_at: float
 
@@ -112,7 +111,7 @@ class ClueInfo(BaseModel):
 class GameStateResponse(BaseModel):
     session_id: str
     turn: int
-    active_npc_id: str
+    active_npc_id: Optional[str] = None
     active_npc: Optional[NPCInfo] = None
     location: Optional[LocationInfo] = None
     player: Optional[PlayerInfo] = None

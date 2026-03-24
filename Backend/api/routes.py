@@ -214,7 +214,6 @@ async def create_session(req: CreateSessionRequest):
             gender=req.gender,
             age=req.age,
             occupation=req.occupation,
-            default_npc_id=req.default_npc_id,
             reset=req.reset,
         )
     except RuntimeError as e:

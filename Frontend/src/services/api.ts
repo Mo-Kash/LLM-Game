@@ -6,6 +6,7 @@
  */
 
 import type { APIResponse } from "@/types/game";
+import { API_BASE_URL, WS_CONFIG, GAME_CONSTANTS } from "@/config/constants";
 
 // ── API Types (mirroring backend schemas) ──────────────────
 
@@ -13,7 +14,7 @@ export interface SessionInfo {
 	session_id: string;
 	player_name: string;
 	turn: number;
-	active_npc_id: string;
+	active_npc_id: string | null;
 	current_location_id: string;
 	created_at: number;
 }
@@ -70,7 +71,7 @@ export interface PlayerInfo {
 export interface GameStateResponse {
 	session_id: string;
 	turn: number;
-	active_npc_id: string;
+	active_npc_id: string | null;
 	active_npc: NPCInfo | null;
 	location: LocationInfo | null;
 	player: PlayerInfo | null;
@@ -118,7 +119,7 @@ export interface ActionResponse {
 
 export interface NPCListResponse {
 	npcs: NPCInfo[];
-	active_npc_id: string;
+	active_npc_id: string | null;
 }
 
 export interface HealthResponse {
@@ -151,7 +152,7 @@ export interface GameMetadataResponse {
 class APIClient {
 	private baseUrl: string;
 
-	constructor(baseUrl = "/api/game") {
+	constructor(baseUrl = API_BASE_URL) {
 		this.baseUrl = baseUrl;
 	}
 
@@ -204,7 +205,6 @@ class APIClient {
 		gender: string;
 		age: number;
 		occupation: string;
-		defaultNpcId?: string;
 		reset?: boolean;
 	}): Promise<SessionInfo> {
 		return this.request<SessionInfo>("POST", "/session", {
@@ -212,7 +212,6 @@ class APIClient {
 			gender: config.gender,
 			age: config.age,
 			occupation: config.occupation,
-			default_npc_id: config.defaultNpcId ?? "gareth_barkeep",
 			reset: config.reset ?? false,
 		});
 	}
@@ -340,7 +339,7 @@ class WebSocketService {
 	private ws: WebSocket | null = null;
 	private listeners: Map<string, WSCallback[]> = new Map();
 	private reconnectAttempts = 0;
-	private maxReconnects = 5;
+	private maxReconnects = WS_CONFIG.RECONNECT_MAX_ATTEMPTS;
 	private sessionId: string | null = null;
 	private _pingInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -366,7 +365,7 @@ class WebSocketService {
 			// Start heartbeat
 			this._pingInterval = setInterval(() => {
 				this.send("ping", {});
-			}, 30000);
+			}, WS_CONFIG.HEARTBEAT_INTERVAL_MS);
 		};
 
 		this.ws.onmessage = (event) => {
@@ -444,7 +443,10 @@ class WebSocketService {
 	private _handleReconnect() {
 		if (this.reconnectAttempts < this.maxReconnects && this.sessionId) {
 			this.reconnectAttempts++;
-			const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+			const delay = Math.min(
+				WS_CONFIG.RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts),
+				WS_CONFIG.RECONNECT_MAX_DELAY_MS,
+			);
 			console.log(
 				`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`,
 			);

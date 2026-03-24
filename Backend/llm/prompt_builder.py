@@ -96,6 +96,7 @@ def build_prompt(
     history: str,
     max_chars: int = 6000,
 ) -> str:
+    active_npc_id = active_npc_id or "narrator"
     loc_id = world.player.current_location_id
     location = world.locations.get(loc_id)
     npc = world.npcs.get(active_npc_id)

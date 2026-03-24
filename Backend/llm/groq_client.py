@@ -10,6 +10,8 @@ from typing import Iterator, Optional
 
 from groq import Groq
 
+import config
+
 log = logging.getLogger(__name__)
 
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?})\s*```", re.DOTALL)
@@ -45,14 +47,14 @@ class GroqClient:
         max_tokens: int = 4096,
         temperature: float = 0.35,
         stream: bool = False,
-        max_retries: int = 3,
+        max_retries: int = config.LLM_MAX_RETRIES,
     ) -> str:
         """
         Returns full response text.
         Handles retries for rate limits (429).
         """
         retries = 0
-        backoff = 1.0  # seconds
+        backoff = config.LLM_RETRY_BACKOFF  # seconds
 
         while retries <= max_retries:
             try:

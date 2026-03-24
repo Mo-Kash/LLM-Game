@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 class TurnState(TypedDict):
     # Inputs
     player_input: str
-    active_npc_id: str
+    active_npc_id: Optional[str]
     world: WorldState
     # Pipeline intermediates
     query_vec: Optional[Any]  # np.ndarray
@@ -79,7 +79,7 @@ def make_node_retrieval(
             filter_npc=state["active_npc_id"],
         )
         # If few results, retry without location filter
-        if len(results) < 2:
+        if len(results) < config.RETRIEVAL_MIN_CANDIDATES:
             results = memory.search(vec, top_k=top_k)
         state["retrieved_memories"] = results
         log.debug(
@@ -197,7 +197,7 @@ def make_node_event_commit(
             event_type=EventType.NPC_SPOKE,
             payload={
                 "npc_id": state["active_npc_id"],
-                "text": state["npc_dialogue"][:500],
+                "text": state["npc_dialogue"][: config.DIALOGUE_EVENT_TRUNCATE_CHARS],
             },
         )
         store.append(spoke_event)
@@ -224,7 +224,7 @@ def make_node_event_commit(
         summary = (
             output.memory_summary
             if output and output.memory_summary
-            else f"Turn {turn}: {state['player_input'][:80]}"
+            else f"Turn {turn}: {state['player_input'][:config.MEMORY_FALLBACK_TRUNCATE_CHARS]}"
         )
         if state.get("query_vec") is not None:
             memory.add(
@@ -246,7 +246,9 @@ def make_node_event_commit(
 
         # Prune memory if needed
         if len(memory) > config.MEMORY_PRUNE_THRESHOLD:
-            memory.prune_oldest(config.MEMORY_PRUNE_THRESHOLD // 2)
+            memory.prune_oldest(
+                int(config.MEMORY_PRUNE_THRESHOLD * config.MEMORY_PRUNE_KEEP_RATIO)
+            )
 
         # Periodic snapshot + FAISS save
         if turn % snapshot_interval == 0:

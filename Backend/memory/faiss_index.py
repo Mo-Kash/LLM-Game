@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+import config
+
 log = logging.getLogger(__name__)
 
 
@@ -93,7 +95,9 @@ class FAISSMemory:
             return []
         v = vec.reshape(1, -1).astype(np.float32)
         faiss.normalize_L2(v)
-        k = min(top_k * 4, len(self._entries))  # over-fetch for post-filter
+        k = min(
+            top_k * config.FAISS_OVERFETCH_FACTOR, len(self._entries)
+        )  # over-fetch for post-filter
         distances, indices = self._index.search(v, k)
         results = []
         for idx in indices[0]:

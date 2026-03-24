@@ -64,7 +64,7 @@ class GameSession:
         store: EventStore,
         faiss_mem: FAISSMemory,
         short_term: ShortTermMemory,
-        active_npc_id: str,
+        active_npc_id: Optional[str],
         data_dir: Path,
     ):
         self.session_id = session_id
@@ -132,7 +132,7 @@ class SessionManager:
             )
             # Warm the embedding model by encoding a dummy sentence
             if self._embedder:
-                self._embedder.embed("warm up sentence")
+                self._embedder.embed(config.EMBEDDING_WARMUP_TEXT)
                 log.info("Embedding model warmed up.")
             self._initialised = True
             log.info("Shared resources ready.")
@@ -145,7 +145,6 @@ class SessionManager:
         gender: str,
         age: int,
         occupation: str,
-        default_npc_id: str = "gareth_barkeep",
         reset: bool = False,
     ) -> GameSession:
         await self._ensure_init()
@@ -159,10 +158,10 @@ class SessionManager:
         data_dir = config.DATA_DIR / "sessions" / session_id
         data_dir.mkdir(parents=True, exist_ok=True)
 
-        db_path = data_dir / "events.db"
-        faiss_index_path = data_dir / "faiss.index"
-        faiss_meta_path = data_dir / "faiss_meta.json"
-        snapshot_path = data_dir / "snapshot.json"
+        db_path = data_dir / config.EVENTS_DB_FILENAME
+        faiss_index_path = data_dir / config.FAISS_INDEX_FILENAME
+        faiss_meta_path = data_dir / config.FAISS_META_FILENAME
+        snapshot_path = data_dir / config.SNAPSHOT_FILENAME
 
         loop = asyncio.get_event_loop()
 
@@ -175,7 +174,7 @@ class SessionManager:
             world.player.gender = gender
             world.player.age = age
             world.player.occupation = occupation
-            world.player.moral_alignment = 50
+            world.player.moral_alignment = config.INITIAL_MORAL_ALIGNMENT
 
             store.append(Event(turn=0, event_type=EventType.SESSION_START, payload={}))
 
@@ -193,18 +192,9 @@ class SessionManager:
                 self._seed,
             )
 
-            # Resolve NPC
-            npc_id = default_npc_id
-            if npc_id not in world.npcs:
-                loc_id = world.player.current_location_id
-                candidates = [
-                    n.id
-                    for n in world.npcs.values()
-                    if n.location_id == loc_id and n.alive
-                ]
-                npc_id = candidates[0] if candidates else list(world.npcs.keys())[0]
-
-            world.active_npc_id = npc_id
+            # Initially no NPC is active; player must select one in location
+            npc_id = None
+            world.active_npc_id = None
 
             return GameSession(
                 session_id=session_id,
@@ -261,7 +251,9 @@ class SessionManager:
 
             for save_type in ["manual", "auto"]:
                 fname = (
-                    "snapshot.json" if save_type == "manual" else "snapshot_auto.json"
+                    config.SNAPSHOT_FILENAME
+                    if save_type == "manual"
+                    else config.SNAPSHOT_AUTO_FILENAME
                 )
                 snapshot_path = s_dir / fname
                 if snapshot_path.exists():
@@ -303,16 +295,22 @@ class SessionManager:
             return None
 
         # Similar logic to _create but loading from existing files
-        db_path = data_dir / "events.db"
-        faiss_index_path = data_dir / "faiss.index"
-        faiss_meta_path = data_dir / "faiss_meta.json"
+        db_path = data_dir / config.EVENTS_DB_FILENAME
+        faiss_index_path = data_dir / config.FAISS_INDEX_FILENAME
+        faiss_meta_path = data_dir / config.FAISS_META_FILENAME
 
         snapshot_fname = (
-            "snapshot.json" if save_type == "manual" else "snapshot_auto.json"
+            config.SNAPSHOT_FILENAME
+            if save_type == "manual"
+            else config.SNAPSHOT_AUTO_FILENAME
         )
         snapshot_path = data_dir / snapshot_fname
 
-        dh_fname = "dialogue.json" if save_type == "manual" else "dialogue_auto.json"
+        dh_fname = (
+            config.DIALOGUE_FILENAME
+            if save_type == "manual"
+            else config.DIALOGUE_AUTO_FILENAME
+        )
         dh_path = data_dir / dh_fname
 
         loop = asyncio.get_event_loop()
@@ -400,10 +398,14 @@ class SessionManager:
             # Use actual last event ID for the snapshot
             last_id = session.store.get_last_id()
 
-            snap_fname = "snapshot_auto.json" if is_auto else "snapshot.json"
+            snap_fname = (
+                config.SNAPSHOT_AUTO_FILENAME if is_auto else config.SNAPSHOT_FILENAME
+            )
             save_snapshot(session.world, session.data_dir / snap_fname, last_id)
 
-            dh_fname = "dialogue_auto.json" if is_auto else "dialogue.json"
+            dh_fname = (
+                config.DIALOGUE_AUTO_FILENAME if is_auto else config.DIALOGUE_FILENAME
+            )
             with open(session.data_dir / dh_fname, "w") as f:
                 json.dump(session.dialogue_history, f)
 

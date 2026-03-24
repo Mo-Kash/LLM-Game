@@ -17,6 +17,7 @@ import {
 	type WSOutMessage,
 	type SaveInfo,
 } from "@/services/api";
+import { GAME_CONSTANTS } from "@/config/constants";
 
 interface GameState {
 	// Session
@@ -216,7 +217,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 	// Turn
 	turn: 0,
-	moralAlignment: 50,
+	moralAlignment: GAME_CONSTANTS.INITIAL_MORAL_ALIGNMENT,
 
 	// ── Backend integration ─────────────────────────────────
 
@@ -229,6 +230,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 				sessionId: session.session_id,
 				playerName: session.player_name,
 				turn: session.turn,
+				activeNPC: null,
 				dialogueHistory: [],
 			});
 
@@ -268,9 +270,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 			}
 
 			// Active NPC
-			if (state.active_npc) {
-				updates.activeNPC = toFrontendNPC(state.active_npc);
-			}
+			updates.activeNPC = state.active_npc
+				? toFrontendNPC(state.active_npc)
+				: null;
 
 			// Player
 			if (state.player) {
@@ -314,7 +316,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 			// Dialogue History — sync from backend
 			if (state.dialogue_history) {
-				updates.dialogueHistory = state.dialogue_history.map((m: any) => ({
+				updates.dialogueHistory = state.dialogue_history.map((m) => ({
 					id: m.id,
 					type: m.type as MessageType,
 					speaker: m.speaker,
