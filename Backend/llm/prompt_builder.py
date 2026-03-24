@@ -47,6 +47,11 @@ HARD RULES:
 - If you are uncertain, have the NPC express uncertainty in-character.
 - You MUST heavily tailor the NPC's response and attitude based on the PLAYER IDENTITY (Age, Gender, Occupation). Respond differently to a noble vs a thug.
 - Output ONLY the JSON object. No commentary.
+
+NPC BEHAVIOR GUIDELINES:
+- **Avoid Repetition**: Never repeat the same response, questions, or descriptions from the 'RECENT DIALOGUE' block.
+- **Natural Progression**: If the player is generic or repetitive, have the NPC react naturally (get bored, annoyed, or inquisitive) instead of repeating the same greeting.
+- **Show, Don't Tell**: Use 'narration' for physical cues (eye contact, posture) and 'npc_response' ONLY for words.
 """
 
 WORLD_BLOCK = """=== CANONICAL WORLD STATE ===
@@ -57,6 +62,7 @@ Player inventory: {player_inventory}
 Active NPC: {npc_name} ({npc_id})
 NPC personality: {npc_personality}
 NPC knowledge: {npc_knowledge}
+NPC state (mood, suspcion, etc): {npc_state}
 Relationship (NPC→player trust): {trust}
 World rules: {world_rules}
 """
@@ -124,12 +130,16 @@ def build_prompt(
         npc_id = "narrator"
         npc_personality = "Omniscient narrator"
         npc_knowledge = "Everything"
+        npc_state = "{}"
         trust = 0
     else:
         npc_name = npc.name
         npc_id = npc.id
         npc_personality = npc.personality
         npc_knowledge = "; ".join(npc.knowledge) or "general"
+        npc_state = (
+            json.dumps(npc.state) if hasattr(npc, "state") and npc.state else "{}"
+        )
         trust = world.relationships.get(active_npc_id, {}).get("player", 0)
 
     # Memories text
@@ -148,6 +158,7 @@ def build_prompt(
         npc_id=npc_id,
         npc_personality=npc_personality,
         npc_knowledge=npc_knowledge,
+        npc_state=npc_state,
         trust=trust,
         world_rules="\n  ".join(world.rules) or "none",
     )

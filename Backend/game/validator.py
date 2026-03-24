@@ -97,9 +97,8 @@ def _validate_proposal(proposal: WorldUpdateProposal, world: WorldState) -> str:
         npc_id = p.get("npc_id")
         if npc_id not in world.npcs:
             return f"npc_id '{npc_id}' not canonical"
-        allowed_keys = {"alive", "location_id"}
-        if p.get("key") not in allowed_keys:
-            return f"npc key '{p.get('key')}' not mutable"
+        if not p.get("key"):
+            return "missing key"
 
     elif t == "PLAYER_FLAG_SET":
         if not p.get("key"):

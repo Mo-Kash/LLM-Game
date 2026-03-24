@@ -63,6 +63,8 @@ class CerebrasClient:
                         model=self.model,
                         max_tokens=max_tokens,
                         temperature=temperature,
+                        frequency_penalty=0.15,
+                        presence_penalty=0.05,
                     )
                     return response.choices[0].message.content or ""
                 else:
@@ -102,6 +104,8 @@ class CerebrasClient:
             model=self.model,
             max_tokens=max_tokens,
             temperature=temperature,
+            frequency_penalty=0.15,
+            presence_penalty=0.05,
             stream=True,
         )
 

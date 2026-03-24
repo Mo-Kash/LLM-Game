@@ -36,6 +36,9 @@ class Embedder:
         )
         self._cache_conn.commit()
 
+        # Eagerly load model to avoid cold-starts during gameplay
+        _get_model(model_name)
+
     def _hash(self, text: str) -> str:
         return hashlib.sha256(text.encode()).hexdigest()
 

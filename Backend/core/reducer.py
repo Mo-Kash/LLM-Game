@@ -73,14 +73,14 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
             key = p.get("key")
             value = p.get("value")
             if npc_id and npc_id in s.npcs and key:
+                npc = s.npcs[npc_id]
                 if key == "alive":
-                    s.npcs[npc_id].alive = bool(value)
+                    npc.alive = bool(value)
                 elif key == "location_id" and str(value) in s.locations:
-                    s.npcs[npc_id].location_id = str(value)
+                    npc.location_id = str(value)
                 else:
-                    log.warning(
-                        "NPC_STATE_CHANGED: unrecognised key '%s' — ignored", key
-                    )
+                    # Generic flag/state storage
+                    npc.state[key] = value
 
         elif et == EventType.PLAYER_FLAG_SET:
             key = p.get("key")

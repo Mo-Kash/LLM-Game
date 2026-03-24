@@ -21,7 +21,7 @@ EMBED_CACHE_PATH = DATA_DIR / "embed_cache.db"
 
 # ── Cerebras LLM ─────────────────────────────────────────────────────────────
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "your_cerebras_api_key_here")
-MODEL_NAME = "gpt-oss-120b"
+MODEL_NAME = "llama3.1-8b"
 
 TEMPERATURE = 0.35
 MAX_GENERATION_TOKENS = 4096
