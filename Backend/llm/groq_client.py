@@ -1,4 +1,4 @@
-"""Cerebras LLM client — wrapper for Cerebras Cloud SDK."""
+"""Groq LLM client — wrapper for Groq Cloud SDK."""
 
 from __future__ import annotations
 import json
@@ -8,7 +8,7 @@ import sys
 import time
 from typing import Iterator, Optional
 
-from cerebras.cloud.sdk import Cerebras
+from groq import Groq
 
 log = logging.getLogger(__name__)
 
@@ -16,10 +16,10 @@ _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?})\s*```", re.DOTALL)
 _JSON_RAW = re.compile(r"(\{.*})", re.DOTALL)
 
 
-class CerebrasClient:
+class GroqClient:
     def __init__(self, model: str, api_key: Optional[str] = None, timeout: int = 30):
         self.model = model
-        self.client = Cerebras(
+        self.client = Groq(
             api_key=api_key,
             timeout=timeout,
         )
@@ -28,7 +28,6 @@ class CerebrasClient:
     def ping(self) -> bool:
         try:
             # Simple check to see if we can list models or similar
-            # Cerebras SDK might not have a direct ping, but we can try a tiny completion
             self.client.chat.completions.create(
                 messages=[{"role": "user", "content": "ping"}],
                 model=self.model,
@@ -36,7 +35,7 @@ class CerebrasClient:
             )
             return True
         except Exception as exc:
-            log.error("Cerebras unreachable or error: %s", exc)
+            log.error("Groq unreachable or error: %s", exc)
             return False
 
     # ── Single generation ─────────────────────────────────────────────────
@@ -63,29 +62,30 @@ class CerebrasClient:
                         model=self.model,
                         max_tokens=max_tokens,
                         temperature=temperature,
-                        frequency_penalty=0.15,
-                        presence_penalty=0.05,
+                        # Groq doesn't always support frequency/presence penalty depending on model,
+                        # so we'll omit them to be safe unless specifically needed.
                     )
                     return response.choices[0].message.content or ""
                 else:
                     return self._stream_generate(prompt, max_tokens, temperature)
             except Exception as exc:
+                exc_str = str(exc).lower()
                 is_rate_limit = (
-                    "429" in str(exc)
-                    or "rate_limit" in str(exc).lower()
-                    or "too_many_requests" in str(exc).lower()
+                    "429" in exc_str
+                    or "rate_limit" in exc_str
+                    or "too_many_requests" in exc_str
                 )
 
                 if is_rate_limit and retries < max_retries:
                     log.warning(
-                        f"Rate limited by Cerebras. Retrying in {backoff}s... (Attempt {retries + 1}/{max_retries})"
+                        f"Rate limited by Groq. Retrying in {backoff}s... (Attempt {retries + 1}/{max_retries})"
                     )
                     time.sleep(backoff)
                     retries += 1
                     backoff *= 2  # Exponential backoff
                     continue
 
-                log.error(f"Cerebras generation error (Attempt {retries + 1}): {exc}")
+                log.error(f"Groq generation error (Attempt {retries + 1}): {exc}")
                 if retries >= max_retries:
                     raise exc
 
@@ -104,8 +104,6 @@ class CerebrasClient:
             model=self.model,
             max_tokens=max_tokens,
             temperature=temperature,
-            frequency_penalty=0.15,
-            presence_penalty=0.05,
             stream=True,
         )
 

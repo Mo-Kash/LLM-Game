@@ -28,7 +28,7 @@ from core.snapshot import load_snapshot, save_snapshot
 from memory.embedder import Embedder
 from memory.faiss_index import FAISSMemory
 from memory.short_term import ShortTermMemory
-from llm.cerebras_client import CerebrasClient
+from llm.groq_client import GroqClient
 from game.world_loader import load_world_seed
 from graph.definition import build_graph, TurnState
 from schemas.events import Event, EventType
@@ -93,13 +93,13 @@ class GameSession:
 class SessionManager:
     """
     Creates, stores, retrieves, and destroys game sessions.
-    Shared resources (Embedder, CerebrasClient) are initialised once.
+    Shared resources (Embedder, GroqClient) are initialised once.
     """
 
     def __init__(self):
         self._sessions: Dict[str, GameSession] = {}
         self._embedder: Optional[Embedder] = None
-        self._client: Optional[CerebrasClient] = None
+        self._client: Optional[GroqClient] = None
         self._seed = None
         self._initialised = False
         self._init_lock = asyncio.Lock()
@@ -125,9 +125,9 @@ class SessionManager:
                     config.EMBEDDING_DIM,
                 ),
             )
-            self._client = CerebrasClient(
+            self._client = GroqClient(
                 model=config.MODEL_NAME,
-                api_key=config.CEREBRAS_API_KEY,
+                api_key=config.GROQ_API_KEY,
                 timeout=config.REQUEST_TIMEOUT,
             )
             # Warm the embedding model by encoding a dummy sentence
