@@ -58,8 +58,8 @@ foreach ($Service in $Services) {
 }
 
 # Automatically open the browser for the frontend
-Write-Host "`nOpening browser at http://localhost:3000..." -ForegroundColor Gray
-Start-Process "http://localhost:3000"
+Write-Host "`nOpening browser at http://localhost:8080..." -ForegroundColor Gray
+Start-Process "http://localhost:8080"
 
 Write-Host "`nReady! Combined logs below (Ctrl+C to quit):" -ForegroundColor White
 Write-Host "----------------------------------------------------------------------`n"
