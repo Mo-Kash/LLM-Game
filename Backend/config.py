@@ -34,7 +34,7 @@ MODEL_NAME = "openai/gpt-oss-120b"
 
 TEMPERATURE = 0.35
 MAX_GENERATION_TOKENS = 4096
-REQUEST_TIMEOUT = 60  # seconds
+REQUEST_TIMEOUT = 30  # seconds
 LLM_MAX_RETRIES = 3
 LLM_RETRY_BACKOFF = 1.0
 
@@ -45,22 +45,22 @@ EMBEDDING_WARMUP_TEXT = "warm up sentence"
 
 # ── Memory ─────────────────────────────────────────────────────────────────
 MAX_SHORT_TERM_TURNS = 8  # turns injected verbatim
-TOP_K_RETRIEVAL = 4  # FAISS neighbours
-FAISS_OVERFETCH_FACTOR = 4  # over-fetch for post-filter
-SNAPSHOT_INTERVAL = 20  # persist snapshot every N turns
-MEMORY_PRUNE_THRESHOLD = 200  # FAISS entries before pruning oldest
+TOP_K_RETRIEVAL = 6  # FAISS neighbours
+FAISS_OVERFETCH_FACTOR = 5  # over-fetch for post-filter
+SNAPSHOT_INTERVAL = 16  # persist snapshot every N turns
+MEMORY_PRUNE_THRESHOLD = 1000  # FAISS entries before pruning oldest
 MEMORY_PRUNE_KEEP_RATIO = 0.5  # ratio of entries to keep after pruning
-RETRIEVAL_MIN_CANDIDATES = 2  # min results before retrying without filter
+RETRIEVAL_MIN_CANDIDATES = 3  # min results before retrying without filter
 
 # ── Truncation ─────────────────────────────────────────────────────────────
-DIALOGUE_EVENT_TRUNCATE_CHARS = 500
-MEMORY_FALLBACK_TRUNCATE_CHARS = 80
+DIALOGUE_EVENT_TRUNCATE_CHARS = 4096
+MEMORY_FALLBACK_TRUNCATE_CHARS = 512
 
 # ── Game Logic ─────────────────────────────────────────────────────────────
 INITIAL_MORAL_ALIGNMENT = 50
 
 # ── Prompt / Context ───────────────────────────────────────────────────────
-MAX_CONTEXT_CHARS = 6000  # rough guard before tokenisation
+MAX_CONTEXT_CHARS = 16384  # rough guard before tokenisation
 
 # ── API Server ─────────────────────────────────────────────────────────────
 import os
