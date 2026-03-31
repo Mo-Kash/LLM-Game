@@ -54,6 +54,7 @@ class PlayerState(BaseModel):
     inventory: List[str] = Field(default_factory=list)  # object ids
     flags: Dict[str, Any] = Field(default_factory=dict)
     moral_alignment: int = 50
+    currency: int = 100  # USD equivalent starting money
 
 
 class Clue(BaseModel):

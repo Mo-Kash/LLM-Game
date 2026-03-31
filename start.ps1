@@ -50,8 +50,8 @@ Write-Host "--------------------------------------------------------------------
 
 # Define services
 $Services = @(
-    @{ Name = "Backend-API";   Path = "$RootPath\Backend";       Cmd = "..\.venv\Scripts\python.exe server.py 2>&1" },
-    @{ Name = "Frontend";      Path = "$RootPath\Frontend";      Cmd = "npm run dev 2>&1" }
+    @{ Name = "Backend-API";   Path = "$RootPath\Backend";       Cmd = "..\\.venv\\Scripts\\python.exe -u server.py 2>`$null" },
+    @{ Name = "Frontend";      Path = "$RootPath\Frontend";      Cmd = "npm run dev 2>`$null" }
 )
 
 # Launch each service as a background job
@@ -67,14 +67,37 @@ foreach ($Service in $Services) {
         # Ensure common dev tools use UTF-8/Colors
         $env:PYTHONIOENCODING = "utf-8"
         $env:FORCE_COLOR = "1"
+        # Suppress tqdm/progress bar noise
+        $env:TQDM_DISABLE = "1"
         
         Set-Location $Path
         Invoke-Expression $Cmd
     } -ArgumentList $Service.Path, $Service.Cmd | Out-Null
 }
 
-# Automatically open the browser for the frontend
-Write-Host "`nOpening browser at http://localhost:8080..." -ForegroundColor Gray
+# Wait for the backend to be ready before opening browser
+Write-Host "`nWaiting for backend to be ready..." -ForegroundColor Gray
+$maxWait = 30
+$waited = 0
+while ($waited -lt $maxWait) {
+    Start-Sleep -Seconds 1
+    $waited++
+    try {
+        $response = Invoke-RestMethod -Uri "http://localhost:8000/health" -TimeoutSec 2 -ErrorAction Stop
+        if ($response.ready -eq $true) {
+            Write-Host "Backend ready! (${waited}s)" -ForegroundColor Green
+            break
+        }
+    } catch {
+        # Backend not up yet
+    }
+    if ($waited % 5 -eq 0) {
+        Write-Host "  Still loading... (${waited}s)" -ForegroundColor DarkGray
+    }
+}
+
+# Open the browser
+Write-Host "Opening browser at http://localhost:8080..." -ForegroundColor Gray
 Start-Process "http://localhost:8080"
 
 Write-Host "`nReady! Combined logs below (Ctrl+C to quit):" -ForegroundColor White

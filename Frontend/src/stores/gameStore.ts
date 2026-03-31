@@ -18,6 +18,7 @@ import {
 	type SaveInfo,
 } from "@/services/api";
 import { GAME_CONSTANTS } from "@/config/constants";
+import { toast } from "sonner";
 
 interface GameState {
 	// Session
@@ -66,8 +67,14 @@ interface GameState {
 	isProcessing: boolean;
 	setProcessing: (v: boolean) => void;
 
-	// Inventory
-	inventory: Array<{ id: string; name: string; description: string }>;
+	// Inventory & Currency
+	inventory: Array<{
+		id: string;
+		name: string;
+		description: string;
+		properties?: Record<string, unknown>;
+	}>;
+	currency: number;
 
 	// Relationships
 	relationships: Record<string, Record<string, number>>;
@@ -115,6 +122,12 @@ interface GameState {
 
 	/** Connect WebSocket to session */
 	connectWebSocket: () => void;
+
+	/** Pick up an object from current location */
+	pickupObject: (objectId: string) => Promise<void>;
+
+	/** Drop an object from inventory */
+	dropObject: (objectId: string) => Promise<void>;
 }
 
 /** Convert backend NPCInfo to frontend NPC type */
@@ -123,6 +136,8 @@ function toFrontendNPC(info: NPCInfo): NPC {
 		id: info.id,
 		name: info.name,
 		title: info.title,
+		description: info.description,
+		personality: info.personality,
 		trust: info.trust,
 		maxTrust: info.max_trust,
 		trustThresholds: info.trust_thresholds,
@@ -209,8 +224,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 	isProcessing: false,
 	setProcessing: (v) => set({ isProcessing: v }),
 
-	// Inventory
+	// Inventory & Currency
 	inventory: [],
+	currency: 100,
 
 	// Relationships
 	relationships: {},
@@ -276,12 +292,30 @@ export const useGameStore = create<GameState>((set, get) => ({
 
 			// Player
 			if (state.player) {
+				const oldCurrency = get().currency;
+				const newCurrency = state.player.currency;
+
+				if (get().sessionId && oldCurrency !== newCurrency && get().turn > 0) {
+					const diff = newCurrency - oldCurrency;
+					const sign = diff > 0 ? "+" : "";
+					const msg = `Currency changed: ${sign}$${diff} (Now $${newCurrency})`;
+					toast.info("Wallet Updated", { description: msg });
+					get().addMessage({
+						id: `currency-${Date.now()}`,
+						type: "system",
+						content: msg,
+						timestamp: Date.now(),
+					});
+				}
+
 				updates.inventory = state.player.inventory.map((o) => ({
 					id: o.id,
 					name: o.name,
 					description: o.description,
+					properties: o.properties as Record<string, unknown> | undefined,
 				}));
 				updates.moralAlignment = state.player.moral_alignment;
+				updates.currency = newCurrency;
 			}
 
 			// All NPCs in location — accumulate
@@ -456,8 +490,30 @@ export const useGameStore = create<GameState>((set, get) => ({
 		try {
 			await apiClient.movePlayer(sessionId, locationId);
 			await refreshState();
+			const newLocName = get().currentLocationName;
+			const msg = `You arrived at ${newLocName || "a new location"}.`;
+			toast.success("Moved", {
+				description: msg,
+			});
+			get().addMessage({
+				id: `move-${Date.now()}`,
+				type: "system",
+				content: msg,
+				timestamp: Date.now(),
+			});
 		} catch (error) {
 			console.error("[GameStore] Failed to move player:", error);
+			const errMsg =
+				error instanceof Error ? error.message : "Cannot travel there.";
+			toast.error("Travel Failed", {
+				description: errMsg,
+			});
+			get().addMessage({
+				id: `err-${Date.now()}`,
+				type: "system",
+				content: `Travel Failed: ${errMsg}`,
+				timestamp: Date.now(),
+			});
 			throw error;
 		}
 	},
@@ -574,6 +630,66 @@ export const useGameStore = create<GameState>((set, get) => ({
 			activeNPC: null,
 			npcs: {},
 			turn: 0,
+			currency: 100,
 		});
+	},
+
+	pickupObject: async (objectId: string) => {
+		const { sessionId, refreshState, inventory } = get();
+		if (!sessionId) return;
+		try {
+			await apiClient.pickupObject(sessionId, objectId);
+			await refreshState();
+			// Find newly added item by diffing inventories
+			const newInventory = get().inventory;
+			const newItem = newInventory.find(
+				(i) => !inventory.some((old) => old.id === i.id),
+			);
+			const itemName = newItem?.name || "an item";
+			toast.success("Picked Up", {
+				description: `You picked up ${itemName}.`,
+			});
+			get().addMessage({
+				id: Date.now().toString(),
+				type: "system",
+				content: `Picked up ${itemName}.`,
+				timestamp: Date.now(),
+			});
+		} catch (error) {
+			console.error("[GameStore] Pickup error:", error);
+			toast.error("Pickup Failed", {
+				description:
+					error instanceof Error ? error.message : "Could not pick up item.",
+			});
+			throw error;
+		}
+	},
+
+	dropObject: async (objectId: string) => {
+		const { sessionId, refreshState, inventory } = get();
+		if (!sessionId) return;
+		// Find the item name before dropping
+		const droppedItem = inventory.find((i) => i.id === objectId);
+		const itemName = droppedItem?.name || "an item";
+		try {
+			await apiClient.dropObject(sessionId, objectId);
+			await refreshState();
+			toast.success("Dropped", {
+				description: `You dropped ${itemName}.`,
+			});
+			get().addMessage({
+				id: Date.now().toString(),
+				type: "system",
+				content: `Dropped ${itemName}.`,
+				timestamp: Date.now(),
+			});
+		} catch (error) {
+			console.error("[GameStore] Drop error:", error);
+			toast.error("Drop Failed", {
+				description:
+					error instanceof Error ? error.message : "Could not drop item.",
+			});
+			throw error;
+		}
 	},
 }));

@@ -38,6 +38,7 @@ ALLOWED EventTypes and their payload fields:
   NPC_STATE_CHANGED     → {{"npc_id":"...", "key":"alive|location_id", "value":...}}
   PLAYER_FLAG_SET       → {{"key":"...", "value":...}}
   JOURNAL_ENTRY_CREATED → {{"content":"<one-sentence summary of a significant event>"}}
+  CURRENCY_CHANGED      → {{"delta":<int>, "reason":"<short string>"}}
   NPC_SPOKE             → {{}}
 
 HARD RULES:
@@ -59,6 +60,7 @@ Location: {location_name} — {location_description}
 NPCs present: {npcs_present}
 Objects here: {objects_here}
 Player inventory: {player_inventory}
+Player currency: ${player_currency}
 Active NPC: {npc_name} ({npc_id})
 NPC personality: {npc_personality}
 NPC knowledge: {npc_knowledge}
@@ -115,16 +117,27 @@ def build_prompt(
     ]
 
     # Objects in current location
-    objects_here = [
-        f"{o.name} ({o.id})" for o in world.objects.values() if o.location_id == loc_id
-    ]
+    objects_here = []
+    for o in world.objects.values():
+        if o.location_id == loc_id:
+            val = o.properties.get("value") if o.properties else None
+            if val is not None:
+                objects_here.append(f"{o.name} (${val}) ({o.id})")
+            else:
+                objects_here.append(f"{o.name} ({o.id})")
 
     # Player inventory
-    inventory = [
-        world.objects[oid].name
-        for oid in world.player.inventory
-        if oid in world.objects
-    ]
+    inventory = []
+    for oid in world.player.inventory:
+        if oid in world.objects:
+            obj = world.objects[oid]
+            val = obj.properties.get("value") if obj.properties else None
+            if val is not None:
+                inventory.append(f"{obj.name} (${val})")
+            else:
+                inventory.append(obj.name)
+
+    player_currency = world.player.currency
 
     if active_npc_id == "narrator":
         npc_name = "Narrator"
@@ -155,6 +168,7 @@ def build_prompt(
         npcs_present=", ".join(npcs_present) or "none",
         objects_here=", ".join(objects_here) or "none",
         player_inventory=", ".join(inventory) or "empty",
+        player_currency=player_currency,
         npc_name=npc_name,
         npc_id=npc_id,
         npc_personality=npc_personality,

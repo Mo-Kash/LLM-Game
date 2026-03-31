@@ -21,6 +21,7 @@ class EventType(str, Enum):
     JOURNAL_ENTRY_CREATED = "JOURNAL_ENTRY_CREATED"
     CLUE_DISCOVERED = "CLUE_DISCOVERED"
     CLUE_LINKED = "CLUE_LINKED"
+    CURRENCY_CHANGED = "CURRENCY_CHANGED"
 
 
 class Event(BaseModel):
@@ -75,3 +76,8 @@ class PlayerFlagSetPayload(BaseModel):
 
 class JournalEntryCreatedPayload(BaseModel):
     content: str
+
+
+class CurrencyChangedPayload(BaseModel):
+    delta: int  # positive = earned, negative = spent
+    reason: str = ""  # description of the transaction

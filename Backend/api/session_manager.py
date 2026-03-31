@@ -484,6 +484,11 @@ class SessionManager:
     def active_session_count(self) -> int:
         return len(self._sessions)
 
+    @property
+    def is_ready(self) -> bool:
+        """Whether shared resources (embedder, LLM client) are initialised."""
+        return self._initialised
+
     def ping_llm(self) -> bool:
         if self._client:
             return self._client.ping()

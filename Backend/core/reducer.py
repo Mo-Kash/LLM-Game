@@ -126,6 +126,10 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
                 if id1 not in s.clues[id2].linked_clues:
                     s.clues[id2].linked_clues.append(id1)
 
+        elif et == EventType.CURRENCY_CHANGED:
+            delta = int(p.get("delta", 0))
+            s.player.currency = max(0, s.player.currency + delta)
+
         else:
             log.warning("Reducer: unhandled event type %s", et)
 

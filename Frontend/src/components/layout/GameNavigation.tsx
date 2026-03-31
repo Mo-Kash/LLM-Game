@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 const navItems = [
 	{ to: "/game", label: "Tavern" },
 	{ to: "/world", label: "World" },
-	{ to: "/character", label: "Character" },
 	{ to: "/npcs", label: "NPCs" },
 	{ to: "/journal", label: "Journal" },
 ];

@@ -176,6 +176,7 @@ def _build_player_info(session) -> PlayerInfo:
         inventory=inventory,
         flags=world.player.flags,
         moral_alignment=world.player.moral_alignment,
+        currency=world.player.currency,
     )
 
 
@@ -554,9 +555,17 @@ async def move_player(session_id: str, req: MoveRequest):
     current_loc = session.world.locations.get(current_loc_id)
 
     if not current_loc or req.location_id not in current_loc.connected_to:
-        raise HTTPException(
-            400, f"Cannot travel to {req.location_id} from {current_loc_id}"
+        target_name = (
+            session.world.locations[req.location_id].name
+            if req.location_id in session.world.locations
+            else req.location_id.replace("_", " ").title()
         )
+        current_name = (
+            current_loc.name
+            if current_loc
+            else current_loc_id.replace("_", " ").title()
+        )
+        raise HTTPException(400, f"Cannot travel to {target_name} from {current_name}")
 
     # Create and commit move event
     event = Event(
@@ -606,7 +615,70 @@ async def health_check():
         status="ok",
         llm_reachable=llm_ok,
         active_sessions=sm.active_session_count,
+        ready=sm.is_ready,
     )
+
+
+# ── Inventory Endpoints ───────────────────────────────────────────────────
+
+
+@router.post("/pickup/{session_id}/{object_id}", response_model=GameStateResponse)
+async def pickup_object(session_id: str, object_id: str):
+    """Pick up an object from the current location into inventory."""
+    sm = _get_sm()
+    session = sm.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    world = session.world
+    if object_id not in world.objects:
+        raise HTTPException(404, f"Object '{object_id}' not found")
+
+    obj = world.objects[object_id]
+    if obj.location_id != world.player.current_location_id:
+        raise HTTPException(400, f"{obj.name} is not in this location")
+
+    if object_id in world.player.inventory:
+        raise HTTPException(400, f"You already have {obj.name}")
+
+    event = Event(
+        turn=world.turn,
+        event_type=EventType.OBJECT_TAKEN,
+        payload={"object_id": object_id, "taken_by": "player"},
+    )
+    session.store.append(event)
+    session.world = apply_event(session.world, event)
+
+    await sm.save_session(session_id, is_auto=True)
+    return await get_game_state(session_id)
+
+
+@router.post("/drop/{session_id}/{object_id}", response_model=GameStateResponse)
+async def drop_object(session_id: str, object_id: str):
+    """Drop an object from inventory at current location."""
+    sm = _get_sm()
+    session = sm.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+
+    world = session.world
+    if object_id not in world.player.inventory:
+        raise HTTPException(400, "Object not in inventory")
+
+    event = Event(
+        turn=world.turn,
+        event_type=EventType.OBJECT_DROPPED,
+        payload={
+            "object_id": object_id,
+            "dropped_by": "player",
+            "location_id": world.player.current_location_id,
+        },
+    )
+    session.store.append(event)
+    session.world = apply_event(session.world, event)
+
+    await sm.save_session(session_id, is_auto=True)
+    return await get_game_state(session_id)
 
 
 # ── WebSocket ─────────────────────────────────────────────────────────────

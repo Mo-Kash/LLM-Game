@@ -108,4 +108,11 @@ def _validate_proposal(proposal: WorldUpdateProposal, world: WorldState) -> str:
         if not p.get("content"):
             return "missing content"
 
+    elif t == "CURRENCY_CHANGED":
+        delta = p.get("delta")
+        if not isinstance(delta, (int, float)):
+            return "delta must be a number"
+        if delta < 0 and abs(delta) > world.player.currency:
+            return "player does not have enough currency"
+
     return ""

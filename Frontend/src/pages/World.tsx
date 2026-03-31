@@ -5,6 +5,11 @@ import { useGameStore } from "@/stores/gameStore";
 import { apiClient, type LocationInfo, type NPCInfo } from "@/services/api";
 import { toast } from "sonner";
 
+/** Convert snake_case IDs to Title Case display names */
+function toTitleCase(s: string): string {
+	return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function WorldPage() {
 	const { currentLocation, sessionId, sendAction, refreshState } =
 		useGameStore();
@@ -140,7 +145,7 @@ export default function WorldPage() {
 								>
 									<div className="flex items-center gap-2">
 										<span className="font-heading text-xs tracking-wider text-muted-foreground">
-											→ {connId.replace(/_/g, " ")}
+											→ {toTitleCase(connId)}
 										</span>
 									</div>
 									<span className="font-mono text-[9px] text-muted-foreground/50">
@@ -230,7 +235,7 @@ export default function WorldPage() {
 										onClick={() => handleSelect(connId)}
 										className="border border-border px-2 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
 									>
-										→ {connId.replace(/_/g, " ")}
+										→ {toTitleCase(connId)}
 									</button>
 								))}
 							</div>

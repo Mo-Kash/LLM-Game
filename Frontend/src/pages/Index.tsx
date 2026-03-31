@@ -1,6 +1,7 @@
 import { DialoguePanel } from "@/components/game/DialoguePanel";
 import { LocationDisplay } from "@/components/game/LocationDisplay";
 import { PlayerInputDock } from "@/components/game/PlayerInputDock";
+import { GameSidebar } from "@/components/game/GameSidebar";
 
 const Index = () => {
 	return (
@@ -12,6 +13,8 @@ const Index = () => {
 				</div>
 				<PlayerInputDock />
 			</div>
+			{/* Right Sidebar — Consolidated info panel */}
+			<GameSidebar />
 		</div>
 	);
 };

@@ -96,6 +96,7 @@ class PlayerInfo(BaseModel):
     inventory: List[ObjectInfo]
     flags: Dict[str, Any]
     moral_alignment: int = 50
+    currency: int = 100
 
 
 class ClueInfo(BaseModel):
@@ -165,6 +166,7 @@ class HealthResponse(BaseModel):
     version: str = "0.1.0"
     llm_reachable: bool = False
     active_sessions: int = 0
+    ready: bool = False
 
 
 class GameMetadataResponse(BaseModel):

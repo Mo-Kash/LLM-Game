@@ -66,6 +66,7 @@ export interface PlayerInfo {
 	inventory: ObjectInfo[];
 	flags: Record<string, unknown>;
 	moral_alignment: number;
+	currency: number;
 }
 
 export interface GameStateResponse {
@@ -127,6 +128,7 @@ export interface HealthResponse {
 	version: string;
 	llm_reachable: boolean;
 	active_sessions: number;
+	ready: boolean;
 }
 
 export interface SaveInfo {
@@ -308,6 +310,45 @@ class APIClient {
 
 	async getMetadata(): Promise<GameMetadataResponse> {
 		return this.request<GameMetadataResponse>("GET", "/metadata");
+	}
+
+	// ── Inventory ─────────────────────────────────────────────
+
+	async pickupObject(
+		sessionId: string,
+		objectId: string,
+	): Promise<GameStateResponse> {
+		return this.request<GameStateResponse>(
+			"POST",
+			`/pickup/${sessionId}/${objectId}`,
+		);
+	}
+
+	async dropObject(
+		sessionId: string,
+		objectId: string,
+	): Promise<GameStateResponse> {
+		return this.request<GameStateResponse>(
+			"POST",
+			`/drop/${sessionId}/${objectId}`,
+		);
+	}
+
+	// ── Health Polling ────────────────────────────────────────
+
+	/**
+	 * Poll the root /health endpoint (outside of /api/game)
+	 * to check backend readiness.
+	 */
+	async pollReady(): Promise<boolean> {
+		try {
+			const resp = await fetch("/health");
+			if (!resp.ok) return false;
+			const data = await resp.json();
+			return data.ready === true;
+		} catch {
+			return false;
+		}
 	}
 }
 

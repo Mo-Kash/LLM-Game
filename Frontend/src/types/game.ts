@@ -26,6 +26,8 @@ export interface NPC {
 	id: string;
 	name: string;
 	title?: string;
+	description?: string;
+	personality?: string;
 	portraitUrl?: string;
 	trust: number;
 	maxTrust: number;

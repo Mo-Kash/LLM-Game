@@ -90,9 +90,9 @@ def create_app() -> FastAPI:
     app.include_router(game_router)
     app.include_router(ws_router)
 
-    # Root health check (for container orchestration)
+    # Root health check (for container orchestration + frontend readiness polling)
     @app.get("/health")
     async def root_health():
-        return {"status": "ok"}
+        return {"status": "ok", "ready": session_manager.is_ready}
 
     return app

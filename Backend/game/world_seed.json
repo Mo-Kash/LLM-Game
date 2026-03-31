@@ -175,7 +175,11 @@
 			"description": "A heavy stone jug. The contents are pitch black and slightly warm to the touch. It smells like roasted malt and danger.",
 			"location_id": "tavern_common",
 			"owner_id": null,
-			"properties": { "drinkable": true, "effect": "minor_hallucinations" }
+			"properties": {
+				"drinkable": true,
+				"effect": "minor_hallucinations",
+				"value": 5
+			}
 		},
 		"torn_note": {
 			"id": "torn_note",
@@ -183,7 +187,7 @@
 			"description": "A small leather-bound book. The last entry reads: 'Vorn demands the puzzle box. The cellar must be opened.'",
 			"location_id": "tavern_backroom",
 			"owner_id": null,
-			"properties": { "readable": true }
+			"properties": { "readable": true, "value": 15 }
 		},
 		"puzzle_box": {
 			"id": "puzzle_box",
@@ -191,7 +195,7 @@
 			"description": "A cube of intricate, interlocking gears made of an unknown, iridescent metal. It hums faintly.",
 			"location_id": null,
 			"owner_id": "lira_barmaid",
-			"properties": { "puzzle": true, "locked": true }
+			"properties": { "puzzle": true, "locked": true, "value": 200 }
 		},
 		"brass_key": {
 			"id": "brass_key",
@@ -199,7 +203,7 @@
 			"description": "An oversized key that smells of soot, presumably for the Velvet Parlor.",
 			"location_id": "upper_balcony",
 			"owner_id": null,
-			"properties": {}
+			"properties": { "value": 10 }
 		}
 	},
 	"rules": [
@@ -214,6 +218,7 @@
 	"player": {
 		"current_location_id": "tavern_common",
 		"inventory": [],
+		"currency": 100,
 		"flags": {
 			"tension": 0,
 			"world_state": "stable"
