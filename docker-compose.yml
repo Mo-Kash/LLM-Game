@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  backend:
+    build: ./Backend
+    ports: ["8000:8000"]
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080,http://localhost:80}
+    volumes:
+      - ./Backend/data:/app/data
+  frontend:
+    build: ./Frontend
+    ports: ["8080:80"]
+    depends_on:
+      - backend

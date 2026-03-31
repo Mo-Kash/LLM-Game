@@ -69,6 +69,6 @@ API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", FRONTEND_URL).split(",")
-SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-secret-change-in-production")
+SESSION_SECRET = os.getenv("SESSION_SECRET", os.urandom(32).hex())
 WS_HEARTBEAT_INTERVAL = 30  # seconds
 MAX_CONCURRENT_SESSIONS = 50

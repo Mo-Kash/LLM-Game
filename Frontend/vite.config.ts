@@ -4,34 +4,39 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-	server: {
-		host: "::",
-		port: 8080,
-		hmr: {
-			overlay: false,
-		},
-		proxy: {
-			"/api": {
-				target: "http://localhost:8000",
-				changeOrigin: true,
+export default defineConfig(({ mode }) => {
+	const apiUrl = process.env.VITE_API_URL || "http://localhost:8000";
+	const wsUrl = apiUrl.replace(/^http/, "ws");
+
+	return {
+		server: {
+			host: "::",
+			port: 8080,
+			hmr: {
+				overlay: false,
 			},
-			"/health": {
-				target: "http://localhost:8000",
-				changeOrigin: true,
-			},
-			"/ws": {
-				target: "ws://localhost:8000",
-				ws: true,
+			proxy: {
+				"/api": {
+					target: apiUrl,
+					changeOrigin: true,
+				},
+				"/health": {
+					target: apiUrl,
+					changeOrigin: true,
+				},
+				"/ws": {
+					target: wsUrl,
+					ws: true,
+				},
 			},
 		},
-	},
-	plugins: [react(), mode === "development" && componentTagger()].filter(
-		Boolean,
-	),
-	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "./src"),
+		plugins: [react(), mode === "development" && componentTagger()].filter(
+			Boolean,
+		),
+		resolve: {
+			alias: {
+				"@": path.resolve(__dirname, "./src"),
+			},
 		},
-	},
-}));
+	};
+});
