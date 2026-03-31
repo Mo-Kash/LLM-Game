@@ -16,6 +16,8 @@ import config
 from api.session_manager import SessionManager
 from api.routes import router as game_router, ws_router, set_session_manager
 
+import asyncio
+
 log = logging.getLogger(__name__)
 
 # ── Shared session manager ─────────────────────────────────────────────────
@@ -27,13 +29,18 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     log.info("NPC Engine API starting...")
     set_session_manager(session_manager)
-    # Eagerly preload embedding model + world seed to eliminate cold-start latency
+    
+    # Preload shared resources at startup to eliminate cold-start latency.
     try:
         await session_manager._ensure_init()
-        log.info("Shared resources preloaded at startup.")
+        log.info("Shared resources preloaded successfully.")
     except Exception as e:
-        log.warning("Preloading failed (will retry lazily): %s", e)
+        log.error("Preloading failed during startup: %s", e, exc_info=True)
+        # We allow startup to continue even if preloading fails, as it will retry lazily.
+        # But we log it clearly as requested.
+
     yield
+    
     log.info("NPC Engine API shutting down...")
     await session_manager.shutdown()
 

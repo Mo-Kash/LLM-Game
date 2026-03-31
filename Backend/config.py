@@ -39,7 +39,7 @@ LLM_MAX_RETRIES = 3
 LLM_RETRY_BACKOFF = 1.0
 
 # ── Embedding ──────────────────────────────────────────────────────────────
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L12-v2"
 EMBEDDING_DIM = 384
 EMBEDDING_WARMUP_TEXT = "warm up sentence"
 
