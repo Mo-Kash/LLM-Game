@@ -25,8 +25,24 @@ function Stop-All-Jobs {
 # Trap Ctrl+C (SIGINT) and other termination to clean up
 trap { Stop-All-Jobs; exit }
 
-Write-Host "Cleaning up old processes..." -ForegroundColor Gray
+Write-Host "Cleaning up old processes and ports..." -ForegroundColor Gray
 Get-Job | Remove-Job -Force
+
+# Kill processes on port 8000 (Backend)
+$BackendPort = 8000
+$BackendPID = Get-NetTCPConnection -LocalPort $BackendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1
+if ($BackendPID) {
+    Write-Host "Killing process $BackendPID on port $BackendPort..." -ForegroundColor Yellow
+    Stop-Process -Id $BackendPID -Force -ErrorAction SilentlyContinue
+}
+
+# Kill processes on port 8080 (Frontend)
+$FrontendPort = 8080
+$FrontendPID = Get-NetTCPConnection -LocalPort $FrontendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1
+if ($FrontendPID) {
+    Write-Host "Killing process $FrontendPID on port $FrontendPort..." -ForegroundColor Yellow
+    Stop-Process -Id $FrontendPID -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "----------------------------------------------------------------------" -ForegroundColor Gray
 Write-Host "Starting LLM Game Services" -ForegroundColor White
