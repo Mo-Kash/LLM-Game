@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     log.info("NPC Engine API starting...")
     set_session_manager(session_manager)
-    
+
     # Preload shared resources at startup to eliminate cold-start latency.
     try:
         await session_manager._ensure_init()
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
         # But we log it clearly as requested.
 
     yield
-    
+
     log.info("NPC Engine API shutting down...")
     await session_manager.shutdown()
 
