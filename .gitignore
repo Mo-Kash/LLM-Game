@@ -53,7 +53,6 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-package-lock.json
 bun.lockb
 
 # Frontend build artifacts
@@ -71,6 +70,7 @@ build/
 
 # Environment files
 .env
+.env.*
 
 # Coverage reports
 coverage/
@@ -118,3 +118,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*.pem
+*.key
