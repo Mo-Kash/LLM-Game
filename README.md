@@ -28,7 +28,7 @@ Production-grade narrative game engine featuring AI-driven NPCs with long-term m
 - Designed and deployed a dual-tier memory system (8-turn short-term context + FAISS vector retrieval) enabling NPCs to recall relevant conversations from up to 1000 past interactions using 384-dimensional semantic embeddings
 - Built event-sourced persistence layer with SQLite, maintaining 100% immutable audit trail coverage of all game actions for debugging and replay capabilities
 - Implemented WebSocket real-time communication supporting up to 50 concurrent game sessions with automatic connection lifecycle management
-- Developed 25+ REST API endpoints with automatic OpenAPI documentation generated from Pydantic models
+- Developed 17+ REST API endpoints with automatic OpenAPI documentation generated from Pydantic models
 - Configured robust error handling with exponential backoff retry logic (3 attempts) for LLM API failures
 - Reduced LLM context window usage through RAG architecture by selecting only 6 most relevant memories instead of full conversation history
 
