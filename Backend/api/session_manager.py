@@ -132,7 +132,9 @@ class SessionManager:
             )
             # Warm the embedding model by encoding a dummy sentence
             if self._embedder:
-                self._embedder.embed(config.EMBEDDING_WARMUP_TEXT)
+                await loop.run_in_executor(
+                    None, self._embedder.embed, config.EMBEDDING_WARMUP_TEXT
+                )
                 log.info("Embedding model warmed up.")
             self._initialised = True
             log.info("Shared resources ready.")
